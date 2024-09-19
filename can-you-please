@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+
+import argparse
+import subprocess
+
+things = {
+    'create-user': '32958532-33d5d778-4213-4b7f-bac9-b90d15bafdfe',
+    'create-user-with-card': '32958532-d5cae7f3-8584-4b3b-b085-d6b746a4eeb5',
+}
+
+envs = {
+    'dev': '32958532-2f63460e-7a76-49aa-bb7e-455baecb04ca',
+    'sand': '32958532-19869aba-f2b4-447e-940c-b0163b1f66a6'
+}
+
+products = {
+    'zip-pay': 'zpv2',
+    'zip-plus': 'zplus',
+    'zip-money': 'zmv2'
+}
+
+
+def get_version_from_file():
+    try:
+        with open('version.txt', 'r') as f:
+            version = f.read().strip()
+            return version
+    except FileNotFoundError:
+        return "0"  # Default major version if file not found
+
+
+def execute_command(command):
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+
+    while True:
+        output = process.stdout.readline()
+        if output == '' and process.poll() is not None:
+            break
+        if output:
+            print(output.strip())
+
+    stderr = process.stderr.read()
+    if stderr:
+        print(stderr.strip())
+
+
+def create_command(args):
+    collection_id = '32958532-53ca720b-a4b3-4027-bd92-e3c5f0a55d55'
+    folder_id = things[args.thing]
+    environment_id = envs[args.i]
+    product = products[args.with_product]
+
+    return f'postman collection run {collection_id} -e {environment_id} -i {folder_id} --env-var "product={product}" --bail folder'
+
+
+def main():
+    major_version = get_version_from_file()
+
+    usage_str = f"""can-you-please [-h] [-v] {list(things.keys())} -in {list(envs.keys())} [--with-product {list(products.keys())}]
+    e.g. can-you-please create-user -in sand"""
+
+    parser = argparse.ArgumentParser(description='A helpful assistant. Just ask nicely!', usage=usage_str)
+    parser.add_argument('thing', choices=list(things.keys()), help='A thing to be done')
+    parser.add_argument('-i', '-in', choices=list(envs.keys()), required=True, help='Environment')
+    parser.add_argument('--with-product', choices=list(products.keys()), default='zip-pay',
+                        help='With a specific product (default: zip-pay)')
+    parser.add_argument('-v', '--version', action='version', version=f'%(prog)s v{major_version}.0.0')
+
+    args = parser.parse_args()
+    cmd_str = create_command(args)
+
+    execute_command(cmd_str)
+
+
+if __name__ == "__main__":
+    main()
