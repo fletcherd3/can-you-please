@@ -7,7 +7,7 @@
     "can-you-please": "src/index.js"
   },
   "scripts": {
-    "build": "node src/index.js && echo '✅ Build passed' || echo '❌ Build failed'"
+    "build": "node src/index.js && echo '✅ Build passed' || (echo '❌ Build failed' && exit 1)"
   },
   "keywords": [],
   "author": "",
