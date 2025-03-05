@@ -1,11 +1,20 @@
 image: node:21
 
 stages:
+  - build
   - publish
+
+build:
+  stage: build
+  script:
+    - npm install
+    - npm run build
 
 publish:
   stage: publish
   script:
+    - git config --global user.email "gitlab-ci@zip.co"
+    - git config --global user.name "gitlab-ci"
     - npm version patch
     - echo "@zip:registry=https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/packages/npm/" > .npmrc
     - echo "//${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/packages/npm/:_authToken=${CI_JOB_TOKEN}" >> .npmrc
