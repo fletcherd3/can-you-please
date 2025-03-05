@@ -5,15 +5,12 @@ a simple cli tool to help you run day to day tasks. just ask nicely!
 ```bash
 
 ```
-
-
-
-once published
+## Development
+```bash
+nvm use
+npm install
+npm run start
 ```
-npm install -g @zip/can-you-please
-```
-
-
 
 
 for now
@@ -27,6 +24,11 @@ GITLAB_TOKEN=asdf1234
 # fish
 set -x GITLAB_TOKEN asdf1234
 npm install -g @zip/can-you-please
+```
+
+update to latest
+```
+npm update -g @zip/can-you-please
 ```
 
 ## Setup
