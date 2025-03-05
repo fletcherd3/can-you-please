@@ -6,8 +6,12 @@
   "bin": {
     "can-you-please": "src/index.js"
   },
+  "engines": {
+    "node": "21"
+  },
   "scripts": {
-    "build": "node src/index.js && echo '✅ Build passed' || (echo '❌ Build failed' && exit 1)"
+    "start": "node src/index.js",
+    "build": "npm run start && echo '✅ Build passed' || (echo '❌ Build failed' && exit 1)"
   },
   "keywords": [],
   "author": "",
@@ -17,7 +21,7 @@
   },
   "repository": {
     "name": "can you please",
-    "url": "git@gitlab.com:zip-fletcher.dick/can-you-please.git",
+    "url": "git+ssh://git@gitlab.com/zip-fletcher.dick/can-you-please.git",
     "type": "git",
     "branch": "main"
   },
