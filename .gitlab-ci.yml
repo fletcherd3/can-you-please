@@ -1,12 +1,20 @@
-default:
-  image: node:21
+image: node:21
 
 stages:
-  - deploy
+  - build
+  - publish
 
-publish-npm:
-  stage: deploy
+build:
+  stage: build
+  script:
+    - npm install
+    - npm run build
+
+publish:
+  stage: publish
   script:
     - echo "@zip:registry=https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/packages/npm/" > .npmrc
     - echo "//${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/packages/npm/:_authToken=${CI_JOB_TOKEN}" >> .npmrc
     - npm publish
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
