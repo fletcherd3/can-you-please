@@ -7,7 +7,7 @@
     "can-you-please": "src/index.js"
   },
   "scripts": {
-    "patch-release": "npm version patch && npm publish && git push --follow-tags"
+    "build": "node src/index.js && echo '✅ Build passed' || (echo '❌ Build failed' && exit 1)"
   },
   "keywords": [],
   "author": "",
