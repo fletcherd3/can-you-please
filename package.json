@@ -1,6 +1,6 @@
 {
   "name": "@zip/can-you-please",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "a simple cli tool to help you run day to day tasks. just ask nicely!",
   "main": "src/index.js",
   "bin": {
