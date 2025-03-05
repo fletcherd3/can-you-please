@@ -1,18 +1,29 @@
 {
   "name": "@zip/can-you-please",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "a simple cli tool to help you run day to day tasks. just ask nicely!",
   "main": "src/index.js",
   "bin": {
     "can-you-please": "src/index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "patch-release": "npm version patch && npm publish && git push --follow-tags"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "publishConfig": {
     "registry": "https://zipau.jfrog.io/artifactory/api/npm/npm-local/"
+  },
+  "repository": {
+    "name": "can you please",
+    "url": "git@gitlab.com:zip-fletcher.dick/can-you-please.git",
+    "type": "git",
+    "branch": "main"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "newman": "6.2.1",
+    "process": "^0.11.10"
   }
 }
