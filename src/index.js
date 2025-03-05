@@ -70,7 +70,7 @@ function runNewman(config) {
             });
     });
 }
-asdf
+
 // Main execution
 async function main() {
     try {
