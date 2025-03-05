@@ -3,22 +3,35 @@ a simple cli tool to help you run day to day tasks. just ask nicely!
 
 ## Usage
 ```bash
-# create a test user in sand
-can-you-please create-user -in sand
 
-# checkout what else you can ask
-can-you-please -h
+```
+
+
+
+once published
+```
+npm install -g @zip/can-you-please
+```
+
+
+
+
+for now
+```
+#npm install
+#npm link
+
+# get token
+https://gitlab.com/-/user_settings/personal_access_tokens?name=TODO+change+name&scopes=api
+GITLAB_TOKEN=asdf1234
+# fish
+set -x GITLAB_TOKEN asdf1234
+npm install -g @zip/can-you-please
 ```
 
 ## Setup
 ```bash
-# install postman cli
-# https://learning.postman.com/docs/postman-cli/postman-cli-installation/
-curl -o- "https://dl-cli.pstmn.io/install/osx_arm64.sh" | sh
-postman login --with-api-key <postman-api-key> # you'll need mine, ask me (fletcher)
-
-chmod +x can-you-please
-ln -s $(pwd)/can-you-please /usr/local/bin/can-you-please
-
-# done!
+chmod +x ./index.js
+npm login --registry https://zipau.jfrog.io/artifactory/api/npm/npm-local/
+npm whoami --registry https://zipau.jfrog.io/artifactory/api/npm/npm-local/
 ```

@@ -1,1 +1,10 @@
+# ide
 .idea
+.fleet
+.vscode
+
+# web
+node_modules
+
+# mac
+**/.DS_Store

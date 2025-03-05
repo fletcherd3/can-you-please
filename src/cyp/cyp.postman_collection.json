@@ -1,0 +1,553 @@
+{
+	"info": {
+		"_postman_id": "53ca720b-a4b3-4027-bd92-e3c5f0a55d55",
+		"name": "cyp",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32958532"
+	},
+	"item": [
+		{
+			"name": "create-user",
+			"item": [
+				{
+					"name": "creating user",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const moment = require('moment');",
+									"const datetime = moment().format(\"YYMMDD.HHmm\")",
+									"const email = `${pm.globals.get('first-name')}.${pm.globals.get('last-name')}.${datetime}@zip.co`.toLowerCase()",
+									"pm.variables.set(\"var_email\", email);",
+									"",
+									"var env = pm.environment.get(\"e_short_env\") === 'dev' ? 'dev' : 'sandbox';",
+									"pm.variables.set(\"var_env\", env);",
+									"",
+									"let tmp;",
+									"",
+									"switch (pm.globals.get('product')) {",
+									"    case 'zip-pay':",
+									"        tmp = 'zpv2';",
+									"        break;",
+									"    case 'zip-plus':",
+									"        tmp = 'zplus';",
+									"        break;",
+									"    case 'zip-money':",
+									"        tmp = 'zmv2';",
+									"        break;",
+									"}",
+									"",
+									"pm.variables.set('var_product', tmp)"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json()",
+									"",
+									"pm.variables.set('var_account_id', response.accountId)",
+									"pm.variables.set('var_consumer_id', response.consumerId)",
+									"pm.variables.set('var_customer_id', response.customerId)",
+									"",
+									"pm.test(\"Success\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"env\": \"{{var_env}}\",\n    \"product\": \"{{var_product}}\",\n    \"token\": \"AutomationTest\",\n    \"email\": \"{{var_email}}\",\n    \"isLongPolling\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://zip-qa-createuser.internal.{{e_short_env}}.au.edge.zip.co/createuser",
+							"protocol": "https",
+							"host": [
+								"zip-qa-createuser",
+								"internal",
+								"{{e_short_env}}",
+								"au",
+								"edge",
+								"zip",
+								"co"
+							],
+							"path": [
+								"createuser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updating profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('here you go :)\\n')",
+									"console.log('user details:')",
+									"console.log(`email: ${pm.variables.get('var_email')}`)",
+									"console.log(`customerId: ${pm.variables.get('var_customer_id')}`)",
+									"console.log(`accountId: ${pm.variables.get('var_account_id')}`)",
+									"console.log(`consumerId: ${pm.variables.get('var_consumer_id')}`)",
+									"console.log(`http://admin-cs.${pm.environment.get('e_short_env')}.au.edge.zip.co/customers/${pm.variables.get('var_consumer_id')}\\n`)"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"{{$randomFirstName}}\",\n    \"lastName\": \"{{$randomLastName}}\",\n    \"gender\": \"Male\",\n    \"dateOfBirth\": \"2000-03-10\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://zip-services-customercore.internal.{{e_short_env}}.au.edge.zip.co/api/v1/Customer/{{var_customer_id}}/personal-details",
+							"protocol": "https",
+							"host": [
+								"zip-services-customercore",
+								"internal",
+								"{{e_short_env}}",
+								"au",
+								"edge",
+								"zip",
+								"co"
+							],
+							"path": [
+								"api",
+								"v1",
+								"Customer",
+								"{{var_customer_id}}",
+								"personal-details"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "create a test user"
+		},
+		{
+			"name": "create-user-with-card",
+			"item": [
+				{
+					"name": "creating user",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const moment = require('moment');",
+									"const datetime = moment().format(\"YYMMDD.HHmm\")",
+									"const email = `${pm.globals.get('first-name')}.${pm.globals.get('last-name')}.${datetime}@zip.co`.toLowerCase()",
+									"pm.variables.set(\"var_email\", email);",
+									"",
+									"var env = pm.environment.get(\"e_short_env\") === 'dev' ? 'dev' : 'sandbox';",
+									"pm.variables.set(\"var_env\", env);",
+									"",
+									"let tmp;",
+									"",
+									"switch (pm.globals.get('product')) {",
+									"    case 'zip-pay':",
+									"        tmp = 'zpv2';",
+									"        break;",
+									"    case 'zip-plus':",
+									"        tmp = 'zplus';",
+									"        break;",
+									"    case 'zip-money':",
+									"        tmp = 'zmv2';",
+									"        break;",
+									"}",
+									"",
+									"pm.variables.set('var_product', tmp)"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json()",
+									"",
+									"pm.variables.set('var_account_id', response.accountId)",
+									"pm.variables.set('var_consumer_id', response.consumerId)",
+									"pm.variables.set('var_customer_id', response.customerId)",
+									"",
+									"pm.test(\"Success\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"env\": \"{{var_env}}\",\n    \"product\": \"{{var_product}}\",\n    \"token\": \"AutomationTest\",\n    \"email\": \"{{var_email}}\",\n    \"isLongPolling\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://zip-qa-createuser.internal.{{e_short_env}}.au.edge.zip.co/createuser",
+							"protocol": "https",
+							"host": [
+								"zip-qa-createuser",
+								"internal",
+								"{{e_short_env}}",
+								"au",
+								"edge",
+								"zip",
+								"co"
+							],
+							"path": [
+								"createuser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updating profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Success\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"console.log('here you go :)\\n')",
+									"console.log('user details:')",
+									"console.log(`email: ${pm.variables.get('var_email')}`)",
+									"console.log(`customerId: ${pm.variables.get('var_customer_id')}`)",
+									"console.log(`accountId: ${pm.variables.get('var_account_id')}`)",
+									"console.log(`consumerId: ${pm.variables.get('var_consumer_id')}`)",
+									"console.log(`http://admin-cs.${pm.environment.get('e_short_env')}.au.edge.zip.co/customers/${pm.variables.get('var_consumer_id')}\\n`)"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"{{$randomFirstName}}\",\n    \"lastName\": \"{{$randomLastName}}\",\n    \"gender\": \"Male\",\n    \"dateOfBirth\": \"2000-03-10\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://zip-services-customercore.internal.{{e_short_env}}.au.edge.zip.co/api/v1/Customer/{{var_customer_id}}/personal-details",
+							"protocol": "https",
+							"host": [
+								"zip-services-customercore",
+								"internal",
+								"{{e_short_env}}",
+								"au",
+								"edge",
+								"zip",
+								"co"
+							],
+							"path": [
+								"api",
+								"v1",
+								"Customer",
+								"{{var_customer_id}}",
+								"personal-details"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "creating card",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Success\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"const response = pm.response.json()",
+									"pm.variables.set('var_card_id', response.card.id)",
+									"pm.variables.set('var_external_id', response.card.externalId)",
+									"",
+									"console.log('card details:')",
+									"console.log(`cardId: ${pm.variables.get('var_card_id')}`)",
+									"console.log(`externalId: ${pm.variables.get('var_external_id')}`)"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let tmp;",
+									"",
+									"switch (pm.globals.get('product')) {",
+									"    case 'zip-pay':",
+									"        tmp = 'Zip Pay';",
+									"        break;",
+									"    case 'zip-plus':",
+									"        tmp = 'Zip Plus';",
+									"        break;",
+									"    case 'zip-money':",
+									"        tmp = 'Zip Money';",
+									"        break;",
+									"    default:",
+									"        tmp = 'Zip Pay';",
+									"        break;",
+									"}",
+									"",
+									"pm.variables.set('var_product', tmp)"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-zip-device-token",
+								"value": "VTpjn3YPnsXcK7eI8Cjw",
+								"type": "text"
+							},
+							{
+								"key": "Customer-Id",
+								"value": "{{var_customer_id}}",
+								"type": "text"
+							},
+							{
+								"key": "x-zip-yi-customer-session-id",
+								"value": "bio123",
+								"type": "text"
+							},
+							{
+								"key": "x-zip-requestid",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"requestId\": \"{{$randomUUID}}\",\n  \"cardType\": \"MULTI_USE\",\n  \"merchantURL\": \"https://www.jbhifi.com.au/\",\n  \"account\": {\n    \"id\": \"{{var_account_id}}\",\n    \"consumerIds\": [{{var_consumer_id}}],\n    \"type\": {\n      \"name\": \"Zip\",\n      \"product\": \"{{var_product}}\",\n      \"referenceCode\": \"ZIP\"\n    }\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://cards-api.internal.{{e_short_env}}.au.edge.zip.co/cards",
+							"protocol": "https",
+							"host": [
+								"cards-api",
+								"internal",
+								"{{e_short_env}}",
+								"au",
+								"edge",
+								"zip",
+								"co"
+							],
+							"path": [
+								"cards"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "add-transactions",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var uuid = require('uuid');",
+									"pm.variables.set(\"var_auth_token_1\", uuid.v4());",
+									"pm.variables.set(\"var_auth_token_2\", uuid.v4());",
+									"pm.variables.set(\"var_auth_token_3\", uuid.v4());",
+									"pm.variables.set(\"var_auth_token_4\", uuid.v4());",
+									"pm.variables.set(\"var_auth_token_5\", uuid.v4());"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic NmRkNDlmNmMtMTgyZS00ZTI1LTk2NmEtYjNhMmY5YjAyNGQ2OjFiZDI1OUEzLWFjMzctNGMzZC04NTUwLTY3NmIxZjIwOGI4MQ=="
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"transactions\": [\n        {\n            \"created_time\": \"2025-01-05T07:22:00.000+11:00\",\n            \"token\": \"{{var_auth_token_1}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"authorization\",\n            \"state\": \"PENDING\",\n            \"response\": {\n                \"code\": \"0000\",\n                \"memo\": \"Card security code match\"\n            },\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 7.99,\n            \"request_amount\": 7.99,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"DOORDASH*MCDONALDS\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"iPhone 13\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"a1df18c3f2e8-01c6-45ca-bd0e-123d46f5252\"\n            },\n            \"transaction_metadata\": {\n                \"payment_channel\": \"OTHER\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        },\n        {\n            \"created_time\": \"2025-01-05T08:26:00.000+11:00\",\n            \"token\": \"{{$guid}}\",\n            \"preceding_related_transaction_token\": \"{{var_auth_token_1}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"authorization.clearing\",\n            \"state\": \"COMPLETION\",\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 7.99,\n            \"request_amount\": 7.99,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"DOORDASH*MCDONALDS\"\n            },\n            \"response\": {\n            \"code\": \"0000\",\n            \"memo\": \"Approved or completed successfully\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"iPhone 13\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"a1df18c3f2e8-01c6-45ca-bd0e-123d46f5252\"\n            },\n            \"transaction_metadata\": {\n                \"payment_channel\": \"OTHER\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        },\n        {\n            \"created_time\": \"2025-01-07T12:13:00.000+11:00\",\n            \"token\": \"{{var_auth_token_2}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"authorization\",\n            \"state\": \"PENDING\",\n\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 31.09,\n            \"request_amount\": 31.09,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"BOURKE ST BAKERY P L\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"iPhone 13\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"be3d46f5252-01c6-45ca-bd0e-35df18c3f2e8\"\n            },\n            \"transaction_metadata\": {\n                \"payment_channel\": \"OTHER\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        },\n        {\n            \"created_time\": \"2025-01-07T18:49:00.000+11:00\",\n            \"token\": \"{{var_auth_token_3}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"authorization\",\n            \"state\": \"DECLINED\",\n            \"networkMetadata\": {\n                \"incoming_response_code\": \"05\"\n            },\n            \"response\": {\n                \"code\": \"1844\",\n                \"memo\": \"Network decline advice\"\n            },\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 339.20,\n            \"request_amount\": 339.20,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"SQ *PALM SPRINGS BURLEIGH\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"Fletchers iPhone 16\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"123d46f5252-01c6-45ca-bd0e-35df18c3f2e8\"\n            },\n            \"pos\": {\n                \"pan_entry_mode\": \"CHIP_CONTACTLESS\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        },\n        {\n            \"created_time\": \"2025-01-07T18:51:00.000+11:00\",\n            \"token\": \"{{var_auth_token_4}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"authorization\",\n            \"state\": \"PENDING\",\n            \"response\": {\n                \"code\": \"0000\",\n                \"memo\": \"Card security code match\"\n            },\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 339.20,\n            \"request_amount\": 339.20,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"SQ *PALM SPRINGS BURLEIGH\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"Fletchers iPhone 16\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"123d46f5252-01c6-45ca-bd0e-35df18c3f2e8\"\n            },\n            \"pos\": {\n                \"pan_entry_mode\": \"CHIP_CONTACTLESS\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        },\n        {\n            \"created_time\": \"2025-01-10T12:13:00.000+11:00\",\n            \"token\": \"{{$guid}}\",\n            \"preceding_related_transaction_token\": \"{{var_auth_token_2}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"authorization.clearing\",\n            \"state\": \"COMPLETION\",\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 30.00,\n            \"request_amount\": 30.00,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"BOURKE ST BAKERY P L\"\n            },\n            \"response\": {\n            \"code\": \"0000\",\n            \"memo\": \"Approved or completed successfully\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"iPhone 13\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"be3d46f5252-01c6-45ca-bd0e-35df18c3f2e8\"\n            },\n            \"transaction_metadata\": {\n                \"payment_channel\": \"OTHER\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        },\n        {\n            \"created_time\": \"2025-01-10T12:14:00.000+11:00\",\n            \"token\": \"{{$guid}}\",\n            \"preceding_related_transaction_token\": \"{{var_auth_token_2}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"authorization.clearing\",\n            \"state\": \"COMPLETION\",\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 1.09,\n            \"request_amount\": 1.09,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"BOURKE ST BAKERY P L\"\n            },\n            \"response\": {\n            \"code\": \"0000\",\n            \"memo\": \"Approved or completed successfully\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"iPhone 13\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"be3d46f5252-01c6-45ca-bd0e-35df18c3f2e8\"\n            },\n            \"transaction_metadata\": {\n                \"payment_channel\": \"OTHER\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        },\n        {\n            \"created_time\": \"2025-01-10T23:31:00.000+11:00\",\n            \"token\": \"{{$guid}}\",\n            \"preceding_related_transaction_token\": \"{{var_auth_token_4}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"authorization.clearing\",\n            \"state\": \"COMPLETION\",\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 339.20,\n            \"request_amount\": 339.20,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"SQ *PALM SPRINGS BURLEIGH\"\n            },\n            \"response\": {\n            \"code\": \"0000\",\n            \"memo\": \"Approved or completed successfully\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"Fletchers iPhone 16\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"123d46f5252-01c6-45ca-bd0e-35df18c3f2e8\"\n            },\n            \"pos\": {\n                \"payment_channel\": \"CHIP_CONTACTLESS\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        },\n        {\n            \"created_time\": \"2025-01-17T23:31:00.000+11:00\",\n            \"token\": \"{{$guid}}\",\n            \"preceding_related_transaction_token\": \"{{var_auth_token_4}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"refund\",\n            \"state\": \"COMPLETION\",\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 339.20,\n            \"request_amount\": 339.20,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"SQ *PALM SPRINGS BURLEIGH\"\n            },\n            \"response\": {\n                \"code\": \"0000\",\n                \"memo\": \"Approved or completed successfully\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"Fletchers iPhone 16\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"123d46f5252-01c6-45ca-bd0e-35df18c3f2e8\"\n            },\n            \"pos\": {\n                \"pan_entry_mode\": \"CHIP_CONTACTLESS\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        },\n        {\n            \"created_time\": \"2025-01-18T10:33:00.000+11:00\",\n            \"token\": \"{{var_auth_token_5}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"authorization\",\n            \"state\": \"PENDING\",\n\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 46.62,\n            \"request_amount\": 46.62,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"UBER* PENDING\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"Fletchers iPhone 16\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"123d46f5252-01c6-45ca-bd0e-35df18c3f2e8\"\n            },\n            \"transaction_metadata\": {\n                \"payment_channel\": \"OTHER\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        },\n        {\n            \"created_time\": \"2025-01-18T10:52:00.000+11:00\",\n            \"token\": \"{{$guid}}\",\n            \"preceding_related_transaction_token\": \"{{var_auth_token_5}}\",\n            \"card_token\": \"{{var_external_id}}\",\n            \"type\": \"authorization.reversal\",\n            \"state\": \"CLEARED\",\n            \"standin_by\": \"NETWORK\",\n            \"standin_reason\": \"acquirer_issue\",\n            \"amount\": 46.62,\n            \"request_amount\": 46.62,\n            \"currency\": \"AUD\",\n            \"card_acceptor\": {\n                \"mcc\": \"5812\",\n                \"mid\": \"4FYJBRWDR93LDEF\",\n                \"name\": \"UBER* PENDING\"\n            },\n            \"digital_wallet_token\": {\n                \"device\": {\n                \"name\": \"Fletchers iPhone 16\"\n                },\n                \"state\": \"ACTIVE\",\n                \"token\": \"123d46f5252-01c6-45ca-bd0e-35df18c3f2e8\"\n            },\n            \"transaction_metadata\": {\n                \"payment_channel\": \"OTHER\"\n            },\n            \"network\": \"VISA\",\n            \"subnetwork\": \"VISANET\"\n        }\n\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://api.{{e_short_env}}.au.edge.zip.co/marqeta/hooks/transactions",
+							"protocol": "https",
+							"host": [
+								"api",
+								"{{e_short_env}}",
+								"au",
+								"edge",
+								"zip",
+								"co"
+							],
+							"path": [
+								"marqeta",
+								"hooks",
+								"transactions"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "create a test user with a multi-use card and transactions"
+		},
+		{
+			"name": "get-otp",
+			"item": [
+				{
+					"name": "get-otp",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json()",
+									"",
+									"console.log(`OTP: ${response.data.otp}`)"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"emailAddress\": \"{{email}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://mfa-api.internal.{{e_short_env}}.au.edge.zip.co/okta/getOtp",
+							"protocol": "https",
+							"host": [
+								"mfa-api",
+								"internal",
+								"{{e_short_env}}",
+								"au",
+								"edge",
+								"zip",
+								"co"
+							],
+							"path": [
+								"okta",
+								"getOtp"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "get the OTP for a given email"
+		}
+	]
+}

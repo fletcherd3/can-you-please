@@ -1,0 +1,15 @@
+# todo
+- auto grab the required variables to pass in --with (on failure, show an example '--with customerId=341sdfa-asdf4 product=zip-pay')
+- understands if out of date version, shows cmd to update
+- use whoami for name and email
+- use ARTIFACTORY_USER for email (also add datetime) and name (fletcher.dick.240920.1139@zip.co)
+  - should check regex first
+- auto open csp if csp in autoOpenUrl's
+- also for prod, common bau tasks
+- examples and usage in read me, setting up user
+- faq in readme
+  - what if i only want it run in single environment?
+- dirs for teams and more personal flows
+- docs to understand variable scopes https://learning.postman.com/docs/sending-requests/variables/variables/#defining-variables-in-scripts
+- the option to continue on failure
+-
