@@ -21,7 +21,7 @@
   },
   "repository": {
     "name": "can you please",
-    "url": "git@gitlab.com:zip-fletcher.dick/can-you-please.git",
+    "url": "git+ssh://git@gitlab.com/zip-fletcher.dick/can-you-please.git",
     "type": "git",
     "branch": "main"
   },
