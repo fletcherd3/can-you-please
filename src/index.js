@@ -5,6 +5,7 @@ const newman = require('newman');
 const process = require('process');
 const utils = require('./utils.js');
 const os = require('os');
+const {execSync} = require('child_process')
 
 const version = require('../package.json').version;
 const collection = require('./cyp/cyp.postman_collection.json');
@@ -31,7 +32,8 @@ Usage: can-you-please <flow-name> --in [dev, sand] [options]
     )
     .argument('[list-flows]', 'list all flows')
     .argument('[<flow-name>]', 'a flow to run')
-    .option('-l --list-flows', 'list all flows')
+    .argument('[pull-flows]', 'get latest flows')
+    .option('-l', 'list all flows')
     .option('--in <env>', 'specify environment (dev or sand)')
     .option("--with <key=value...>", 'run flow with variables')
     .option('-d --debug', 'print flow details to stdout')
@@ -80,6 +82,12 @@ async function main() {
             collection.item.forEach(flow => {
                 console.log(`   ${flow.name.padEnd(30)} (${flow.description})`)
             });
+            return;
+        }
+
+        if (flow === 'pull-flows' || options.pullFlows) {
+            console.log('done?')
+            execSync("npm update -g @zip/can-you-please --no-fund")
             return;
         }
 
