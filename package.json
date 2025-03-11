@@ -11,9 +11,17 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "build": "npm run start && echo '✅ Build passed' || (echo '❌ Build failed' && exit 1)"
+    "build": "npm run start && echo '✅ Build passed' || (echo '❌ Build failed' && exit 1)",
+    "lint": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.js\"",
+    "test": "jest"
   },
-  "keywords": [],
+  "keywords": [
+    "cli",
+    "automation",
+    "postman",
+    "newman"
+  ],
   "author": "",
   "license": "ISC",
   "publishConfig": {
@@ -29,5 +37,10 @@
     "commander": "^12.1.0",
     "newman": "6.2.1",
     "process": "^0.11.10"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "jest": "^29.7.0",
+    "prettier": "^3.5.3"
   }
 }
