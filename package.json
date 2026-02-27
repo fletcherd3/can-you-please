@@ -4,7 +4,8 @@
   "description": "a simple cli tool to help you run day to day tasks. just ask nicely!",
   "main": "src/index.js",
   "bin": {
-    "can-you-please": "src/index.js"
+    "can-you-please": "src/index.js",
+    "cyp": "src/index.js"
   },
   "engines": {
     "node": "21"
