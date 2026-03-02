@@ -347,6 +347,7 @@
             {
               "listen": "test",
               "script": {
+                "id": "636b5823-baf4-468a-a2f6-8f527e83f8b4",
                 "exec": [
                   "pm.test(\"Success\", function () {",
                   "    pm.response.to.have.status(201);",
@@ -361,12 +362,14 @@
                   "console.log(`externalId: ${pm.variables.get('var_external_id')}`)"
                 ],
                 "type": "text/javascript",
-                "packages": {}
+                "packages": {},
+                "requests": {}
               }
             },
             {
               "listen": "prerequest",
               "script": {
+                "id": "673a25e9-2381-45bf-9fdb-d02921eed0f7",
                 "exec": [
                   "let tmp;",
                   "",
@@ -388,7 +391,8 @@
                   "pm.variables.set('var_product', tmp)"
                 ],
                 "type": "text/javascript",
-                "packages": {}
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -446,6 +450,101 @@
           "response": []
         },
         {
+          "name": "jit funding request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "d0a3a273-b73f-4251-a182-8de1e70233fe",
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "49a719c0-49ea-4c5f-a9ea-5a96912845fc",
+                "exec": [
+                  "function randomXDigitNumber(x) {",
+                  "    if (!Number.isInteger(x) || x < 1) throw new TypeError('x must be a positive integer');",
+                  "    if (x === 1) return Math.floor(Math.random() * 9) + 0; // 0..9 (if you want 1..9 use +1)",
+                  "    const min = 10 ** (x - 1);",
+                  "    const range = 9 * (10 ** (x - 1)); // from min to min+range-1 = 10^x - 1",
+                  "    return Math.floor(Math.random() * range) + min;",
+                  "}",
+                  "",
+                  "pm.variables.set(\"var_network_ref_id_1\", randomXDigitNumber(15));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "445670c8-d5f8-4e6a-898e-dbb98feeb393",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "e9934fcd-37f5-40b3-bdda-d5c42a20d8dc",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "23E9aad6-3ba2-444b-82bc-bffaf4e3cbfe",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic ZTk5MzRmY2QtMzdmNS00MGIzLWJkZGEtZDVjNDJhMjBkOGRjOjIzRTlhYWQ2LTNiYTItNDQ0Yi04MmJjLWJmZmFmNGUzY2JmZQ=="
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"AUTHORIZATION\",\n    \"state\": \"PENDING\",\n    \"token\": \"{{$randomUUID}}\",\n    \"user_token\": \"{{var_customer_id}}\",\n    \"acting_user_token\": \"{{var_customer_id}}\",\n    \"card_token\": \"{{var_external_id}}\",\n    \"amount\": 7.99,\n    \"currency_code\": \"AUD\",\n    \"created_time\": \"2026-01-05T08:26:00Z\",\n    \"user_transaction_time\": \"2026-01-05T08:26:00Z\",\n    \"settlement_date\": \"2026-01-05T08:26:00Z\",\n    \"network_reference_id\": \"{{var_network_ref_id_1}}\",\n    \"digital_wallet_token\": null,\n    \"gpa_order_unload\": null,\n    \"gpa_order\": {\n        \"jit_funding\": {\n            \"token\": \"{{$randomUUID}}\",\n            \"method\": \"pgfs.authorization\",\n            \"user_token\": \"{{var_customer_id}}\",\n            \"amount\": 7.99\n        }\n    },\n    \"currency_conversion\": {\n        \"network\": {\n            \"original_amount\": 0,\n            \"conversion_rate\": 1,\n            \"original_currency_code\": \"036\"\n        }\n    },\n    \"card_acceptor\": {\n            \"mid\": \"4FYJBRWDR93LDEF\",\n            \"mcc\": \"5812\",\n            \"name\": \"DOORDASH*MCDONALDS\"\n    },\n    // \"acquirer\": {\n    //     \"institution_id_code\": \"218004215\",\n    //     \"institution_country\": \"036\",\n    //     \"retrieval_reference_number\": \"477364599222\",\n    //     \"system_trace_audit_number\": \"017970\"\n    // },\n    // \"card_security_code_verification\": {\n    //     \"type\": \"CVV1\",\n    //     \"institution_country\": {\n    //         \"code\": \"0000\",\n    //         \"memo\": \"Card security code match\"\n    //     }\n    // },\n    // \"pos\": {\n    //     \"pan_entry_mode\": \"MANUAL\",\n    //     \"pin_entry_mode\": \"TRUE\",\n    //     \"terminal_id\": \"TR100000\",\n    //     \"terminal_attendance\": \"UNSPECIFIED\",\n    //     \"card_holder_presence\": \"false\",\n    //     \"card_presence\": \"false\",\n    //     \"partial_approval_capable\": \"false\",\n    //     \"purchase_amount_only\": \"false\",\n    //     \"is_recurring\": null\n    // },\n    // \"fraud\": {\n    //     \"network\": {\n    //         \"transaction_risk_score\": \"20\",\n    //         \"account_risk_score\": \"4\"\n    //     }\n    // },\n    \"preceding_related_transaction_token\": null,\n    \"network\": \"VISA\",\n    \"acquirer_fee_amount\": \"0\",\n    \"transaction_metadata\": {\n        \"payment_channel\": \"OTHER\"\n    }\n    // \"cardholder_authentication_data\": {\n    //     \"verification_result\": \"not_present\"\n    // }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://delegations-api.internal.{{e_short_env}}.au.edge.zip.co/marqeta/delegations/transact/approve",
+              "protocol": "https",
+              "host": [
+                "delegations-api",
+                "internal",
+                "{{e_short_env}}",
+                "au",
+                "edge",
+                "zip",
+                "co"
+              ],
+              "path": [
+                "marqeta",
+                "delegations",
+                "transact",
+                "approve"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "add-transactions",
           "event": [
             {
@@ -468,8 +567,7 @@
                   "    const range = 9 * (10 ** (x - 1)); // from min to min+range-1 = 10^x - 1",
                   "    return Math.floor(Math.random() * range) + min;",
                   "}",
-                  "",
-                  "pm.variables.set(\"var_network_ref_id_1\", randomXDigitNumber(15));",
+                  "// id_1 in jit funding request",
                   "pm.variables.set(\"var_network_ref_id_2\", randomXDigitNumber(15));",
                   "pm.variables.set(\"var_network_ref_id_3\", randomXDigitNumber(15));",
                   "pm.variables.set(\"var_network_ref_id_4\", randomXDigitNumber(15));",

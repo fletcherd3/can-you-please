@@ -34,6 +34,7 @@ program
   .option('--in <env>', 'specify environment (dev or sand)')
   .option('--with <key=value...>', 'run flow with variables')
   .option('-d, --debug', 'print flow details to stdout')
+  .option('-l, --log-file', 'create a log file in the current directory')
   .option('--continue-on-error', 'continue executing requests even if one fails')
   .action(runFlow);
 

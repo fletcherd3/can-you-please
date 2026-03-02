@@ -14,7 +14,7 @@ async function runFlow(flowName, options) {
       environment,
       globals,
       folder: flowName,
-      reporters: [],
+      reporters: options.logFile ? ['json'] : [],
       reporter: options.debug
         ? {
           cli: {
