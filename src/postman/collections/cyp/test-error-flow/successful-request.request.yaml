@@ -1,0 +1,4 @@
+$kind: http-request
+url: https://www.google.com
+method: GET
+order: 1000

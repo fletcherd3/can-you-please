@@ -2,8 +2,10 @@ const os = require('os');
 const { getDefaultGlobals, mergeGlobals, updateGlobalVariable } = require('../globals');
 
 jest.mock('os');
-jest.mock('../../flows/environments/workspace.postman_globals.json', () => ({
-  values: [{ key: 'product', value: 'zip-pay', type: 'default', enabled: true }],
+jest.mock('../../postman/collection3', () => ({
+  getGlobals: jest.fn(() => ({
+    values: [{ key: 'product', value: 'zip-pay', type: 'default', enabled: true }],
+  })),
 }));
 
 describe('globals', () => {

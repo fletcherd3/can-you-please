@@ -1,0 +1,17 @@
+$kind: http-request
+url: https://mfa-api.internal.{{e_short_env}}.au.edge.zip.co/okta/getOtp
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "emailAddress": "{{email}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const response = pm.response.json()
+
+      console.log(`OTP: ${response.data.otp}`)
+    language: text/javascript
+order: 1000

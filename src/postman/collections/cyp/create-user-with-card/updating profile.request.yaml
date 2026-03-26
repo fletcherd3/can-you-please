@@ -1,0 +1,29 @@
+$kind: http-request
+name: updating profile
+url: https://zip-services-customercore.internal.{{e_short_env}}.au.edge.zip.co/api/v1/Customer/{{var_customer_id}}/personal-details
+method: PATCH
+body:
+  type: json
+  content: |-
+    {
+        "firstName": "{{first-name}}",
+        "lastName": "{{last-name}}",
+        "gender": "Male",
+        "dateOfBirth": "2000-03-10"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Success", function () {
+          pm.response.to.have.status(200);
+      });
+
+      console.log('here you go :)\n')
+      console.log('user details:')
+      console.log(`email: ${pm.variables.get('var_email')}`)
+      console.log(`customerId: ${pm.variables.get('var_customer_id')}`)
+      console.log(`accountId: ${pm.variables.get('var_account_id')}`)
+      console.log(`consumerId: ${pm.variables.get('var_consumer_id')}`)
+      console.log(`http://admin-cs.internal.${pm.environment.get('e_short_env')}.au.edge.zip.co/customers/${pm.variables.get('var_consumer_id')}\n`)
+    language: text/javascript
+order: 2000

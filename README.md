@@ -24,10 +24,13 @@ can-you-please create-user --in dev --debug
 can-you-please pull-flows
 ```
 
+## Collection 3 Flows
+This CLI reads Postman Collection 3 files from the git-connected workspace in `src/postman/`.
+
 ## Adding New Flows
-1. Create/edit your flow in Postman
-2. Export the collection to `src/cyp/`
-3. Update the collection reference in `src/index.js`
+1. Create or edit your flow in Postman using Collection 3 files
+2. Save or sync the changes into `src/postman/collections/cyp/`
+3. Add or update matching environments in `src/postman/environments/` when needed
 
 ## Development
 ```bash

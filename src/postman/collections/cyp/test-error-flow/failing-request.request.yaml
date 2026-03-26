@@ -1,0 +1,4 @@
+$kind: http-request
+url: https://httpstat.us/404
+method: GET
+order: 2000

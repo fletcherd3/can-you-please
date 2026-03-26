@@ -1,0 +1,55 @@
+$kind: http-request
+url: https://zip-qa-createuser.internal.{{e_short_env}}.au.edge.zip.co/createuser
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+        "env": "{{var_env}}",
+        "product": "{{var_product}}",
+        "token": "AutomationTest",
+        "email": "{{var_email}}",
+        "isLongPolling": false
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const moment = require('moment');
+      const datetime = moment().format("YYMMDD.HHmm")
+      const email = `${pm.globals.get('first-name')}.${pm.globals.get('last-name')}.${datetime}@zip.co`.toLowerCase()
+      pm.variables.set("var_email", email);
+
+      var env = pm.environment.get("e_short_env") === 'dev' ? 'dev' : 'sandbox';
+      pm.variables.set("var_env", env);
+
+      let tmp;
+
+      switch (pm.globals.get('product')) {
+          case 'zip-pay':
+              tmp = 'zpv2';
+              break;
+          case 'zip-plus':
+              tmp = 'zplus';
+              break;
+          case 'zip-money':
+              tmp = 'zmv2';
+              break;
+      }
+
+      pm.variables.set('var_product', tmp)
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      const response = pm.response.json()
+
+      pm.variables.set('var_account_id', response.accountId)
+      pm.variables.set('var_consumer_id', response.consumerId)
+      pm.variables.set('var_customer_id', response.customerId)
+
+      pm.test("Success", function () {
+          pm.response.to.have.status(200);
+      });
+    language: text/javascript
+order: 1000

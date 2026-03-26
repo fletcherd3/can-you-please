@@ -1,0 +1,14 @@
+name: cyp_dev
+values:
+  - key: e_short_env
+    value: dev
+    enabled: true
+  - key: e_long_env
+    value: dev
+    enabled: true
+  - key: e_del_auth_name
+    value: e9934fcd-37f5-40b3-bdda-d5c42a20d8dc
+    enabled: true
+  - key: e_del_auth_pw
+    value: 23E9aad6-3ba2-444b-82bc-bffaf4e3cbfe
+    enabled: true

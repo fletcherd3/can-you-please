@@ -1,8 +1,8 @@
 const os = require('os');
-const defaultGlobals = require('../flows/environments/workspace.postman_globals.json');
+const { getGlobals } = require('../postman/collection3');
 
 function getDefaultGlobals() {
-  const globals = JSON.parse(JSON.stringify(defaultGlobals)); // Deep clone
+  const globals = JSON.parse(JSON.stringify(getGlobals())); // Deep clone
   const username = os.userInfo().username;
   const defaultFirstName = username ? username.replace(/[^a-zA-Z]/g, '') : '';
 

@@ -11,7 +11,7 @@ process.removeAllListeners('warning');
 
 program
   .version(version)
-  .description('A helpful assistant. Just ask nicely!')
+  .description('A helpful assistant for running Collection 3 flows. Just ask nicely!')
   .hook('preAction', async (thisCommand) => {
     // Validate environment if required
     const cmd = thisCommand.args[0];

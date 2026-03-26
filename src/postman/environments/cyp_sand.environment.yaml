@@ -1,0 +1,14 @@
+name: cyp_sand
+values:
+  - key: e_short_env
+    value: sand
+    enabled: true
+  - key: e_long_env
+    value: sandbox
+    enabled: true
+  - key: e_del_auth_pw
+    value: ''
+    enabled: true
+  - key: e_del_auth_name
+    value: ''
+    enabled: true

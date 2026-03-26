@@ -1,13 +1,14 @@
 const { runNewman } = require('../utils/newman');
 const { getEnvironment } = require('../config/environments');
 const { getDefaultGlobals, mergeGlobals } = require('../config/globals');
-const collection = require('../flows/collections/cyp.postman_collection.json');
+const { getCollection } = require('../postman/collection3');
 
 async function runFlow(flowName, options) {
   try {
     const environment = getEnvironment(options.in);
     const baseGlobals = getDefaultGlobals();
     const globals = mergeGlobals(baseGlobals, options.with);
+    const collection = getCollection();
 
     const config = {
       collection,
