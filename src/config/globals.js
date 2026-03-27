@@ -1,5 +1,5 @@
 const os = require('os');
-const { getGlobals } = require('../postman/collection3');
+const { getGlobals } = require('../collection3/workspace');
 
 function getDefaultGlobals() {
   const globals = JSON.parse(JSON.stringify(getGlobals())); // Deep clone

@@ -5,6 +5,7 @@ const { version } = require('../package.json');
 const { listFlows } = require('./commands/listFlows');
 const { runFlow } = require('./commands/runFlow');
 const { pullFlows } = require('./commands/pullFlows');
+const { setup } = require('./commands/setup');
 
 // Remove warning listeners
 process.removeAllListeners('warning');
@@ -15,7 +16,7 @@ program
   .hook('preAction', async (thisCommand) => {
     // Validate environment if required
     const cmd = thisCommand.args[0];
-    if (cmd !== 'list-flows' && cmd !== 'pull-flows') {
+    if (cmd !== 'list-flows' && cmd !== 'pull-flows' && cmd !== 'setup') {
       const env = thisCommand.opts().in;
       if (!env) {
         console.error('Error: option \'--in <env>\' argument missing');
@@ -25,6 +26,7 @@ program
   });
 
 program.command('list-flows').description('List all available flows').action(listFlows);
+program.command('setup').description('Configure your Collection 3 workspace directory').action(setup);
 
 program.command('pull-flows').description('Update to latest version').action(pullFlows);
 

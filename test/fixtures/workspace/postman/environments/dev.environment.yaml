@@ -1,0 +1,5 @@
+name: dev
+values:
+  - key: e_short_env
+    value: dev
+    enabled: true

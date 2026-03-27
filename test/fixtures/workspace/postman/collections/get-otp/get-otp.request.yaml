@@ -1,0 +1,10 @@
+$kind: http-request
+url: https://api.example.com/otp
+method: POST
+body:
+  type: json
+  content: |-
+    {
+      "emailAddress": "{{email}}"
+    }
+order: 1000

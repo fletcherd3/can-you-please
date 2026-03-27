@@ -1,11 +1,15 @@
-jest.mock('../../postman/collection3', () => ({
+jest.mock('../../collection3/workspace', () => ({
   getCollection: jest.fn(),
 }));
 
-const { getCollection } = require('../../postman/collection3');
+const { getCollection } = require('../../collection3/workspace');
 const { listFlows } = require('../listFlows');
 
 describe('listFlows', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('prints flows from Collection 3 metadata', () => {
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -23,5 +27,25 @@ describe('listFlows', () => {
     expect(logSpy).toHaveBeenCalledWith(`   ${'get-otp'.padEnd(30)} (get otp)`);
 
     logSpy.mockRestore();
+  });
+
+  test('prints a setup hint when no workspace is configured', () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
+
+    getCollection.mockImplementation(() => {
+      throw new Error('No Collection 3 workspace configured. Run `can-you-please setup`.');
+    });
+
+    listFlows();
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      '\nwomp womp :( an error occurred\n',
+      'No Collection 3 workspace configured. Run `can-you-please setup`.'
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+
+    errorSpy.mockRestore();
+    exitSpy.mockRestore();
   });
 });

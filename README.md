@@ -24,13 +24,16 @@ can-you-please create-user --in dev --debug
 can-you-please pull-flows
 ```
 
-## Collection 3 Flows
-This CLI reads Postman Collection 3 files from the git-connected workspace in `src/postman/`.
+## Collection 3 Workspaces
+This CLI reads Postman Collection 3 files from your own git-connected Postman workspace directory.
+
+## Setup
+Run `can-you-please setup` and enter the path to your workspace root. The CLI stores that path in `~/.can-you-please/config.json`.
 
 ## Adding New Flows
 1. Create or edit your flow in Postman using Collection 3 files
-2. Save or sync the changes into `src/postman/collections/cyp/`
-3. Add or update matching environments in `src/postman/environments/` when needed
+2. Save or sync the changes into your workspace's `postman/collections/`, where each collection folder is treated as a flow
+3. Add or update matching environments in your workspace's `postman/environments/` when needed
 
 ## Development
 ```bash

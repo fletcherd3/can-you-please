@@ -11,14 +11,14 @@ jest.mock('../../config/globals', () => ({
   mergeGlobals: jest.fn(),
 }));
 
-jest.mock('../../postman/collection3', () => ({
+jest.mock('../../collection3/workspace', () => ({
   getCollection: jest.fn(),
 }));
 
 const { runNewman } = require('../../utils/newman');
 const { getEnvironment } = require('../../config/environments');
 const { getDefaultGlobals, mergeGlobals } = require('../../config/globals');
-const { getCollection } = require('../../postman/collection3');
+const { getCollection } = require('../../collection3/workspace');
 const { runFlow } = require('../runFlow');
 
 describe('runFlow', () => {

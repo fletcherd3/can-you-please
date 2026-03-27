@@ -1,8 +1,0 @@
-$kind: http-request
-url: https://www.google.com/
-method: GET
-scripts:
-  - type: afterResponse
-    code: console.log('request 3 logged')
-    language: text/javascript
-order: 3000

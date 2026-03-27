@@ -1,0 +1,16 @@
+$kind: http-request
+url: https://api.example.com/users
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "firstName": "{{first-name}}"
+    }
+scripts:
+  - type: afterResponse
+    code: console.log('user created')
+    language: text/javascript
+order: 1000

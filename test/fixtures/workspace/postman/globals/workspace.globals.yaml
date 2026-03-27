@@ -1,0 +1,5 @@
+name: Globals
+values:
+  - key: product
+    value: zip-pay
+    enabled: true

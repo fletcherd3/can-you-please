@@ -1,0 +1,5 @@
+name: sand
+values:
+  - key: e_short_env
+    value: sand
+    enabled: true

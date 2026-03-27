@@ -1,0 +1,3 @@
+$kind: collection
+description: get the OTP for a given email
+order: 2000
