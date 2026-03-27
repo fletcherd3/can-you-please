@@ -29,19 +29,19 @@ describe('listFlows', () => {
     logSpy.mockRestore();
   });
 
-  test('prints a setup hint when no workspace is configured', () => {
+  test('prints a setup hint when no repo is configured', () => {
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
 
     getCollection.mockImplementation(() => {
-      throw new Error('No Collection 3 workspace configured. Run `can-you-please setup`.');
+      throw new Error('No Collection 3 repo configured. Run `can-you-please setup`.');
     });
 
     listFlows();
 
     expect(errorSpy).toHaveBeenCalledWith(
       '\nwomp womp :( an error occurred\n',
-      'No Collection 3 workspace configured. Run `can-you-please setup`.'
+      'No Collection 3 repo configured. Run `can-you-please setup`.'
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
 

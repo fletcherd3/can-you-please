@@ -68,7 +68,7 @@ describe('workspace config', () => {
 
   test('getWorkspaceDir throws a setup message when config is missing', () => {
     expect(() => getWorkspaceDir()).toThrow(
-      'No Collection 3 workspace configured. Run `can-you-please setup`.'
+      'No Collection 3 repo configured. Run `can-you-please setup`.'
     );
   });
 });

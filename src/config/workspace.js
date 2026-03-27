@@ -49,13 +49,13 @@ function expandHomeDirectory(value) {
 
 function validateWorkspaceDir(workspaceDir) {
   if (!workspaceDir || workspaceDir.trim().length === 0) {
-    throw new Error('A workspace directory is required.');
+    throw new Error('A Collection 3 repo path is required.');
   }
 
   const paths = getWorkspacePaths(workspaceDir);
 
   if (!fs.existsSync(paths.root) || !fs.statSync(paths.root).isDirectory()) {
-    throw new Error(`Workspace directory not found: ${paths.root}`);
+    throw new Error(`Collection 3 repo path not found: ${paths.root}`);
   }
 
   if (!fs.existsSync(paths.collectionsDir) || !fs.statSync(paths.collectionsDir).isDirectory()) {
@@ -108,7 +108,7 @@ function getWorkspaceDir() {
   const config = readConfig();
 
   if (!config.workspaceDir) {
-    throw new Error('No Collection 3 workspace configured. Run `can-you-please setup`.');
+    throw new Error('No Collection 3 repo configured. Run `can-you-please setup`.');
   }
 
   return validateWorkspaceDir(config.workspaceDir).root;

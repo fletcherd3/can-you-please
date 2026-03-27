@@ -1,4 +1,5 @@
 const newman = require('newman');
+const { appendLog, resetLog } = require('./logger');
 
 // ANSI color codes
 const colors = {
@@ -130,6 +131,33 @@ function formatDuration(ms) {
   return `${(ms / 1000).toFixed(2)}s`;
 }
 
+function formatLogHeaders(headers) {
+  if (!headers || Object.keys(headers).length === 0) return '(none)';
+
+  return Object.entries(headers)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('\n');
+}
+
+function formatLogBody(body, contentType) {
+  if (!body) return '';
+
+  try {
+    if (contentType && contentType.includes('json')) {
+      return JSON.stringify(JSON.parse(body), null, 2);
+    }
+
+    return String(body);
+  } catch {
+    return String(body);
+  }
+}
+
+function writeLogEntry(config, lines) {
+  if (!config.logPath) return;
+  appendLog(`${lines.join('\n')}\n\n`);
+}
+
 function makeProgressBar(current, total, width = 20) {
   const progress = Math.floor((current / total) * width);
   const remaining = width - progress;
@@ -177,6 +205,11 @@ function runNewman(config) {
     const shouldAbortOnError = config.abortOnError !== false;
     let progressMarks = '';
     const requestTimings = new Map();
+    const requestLogs = new Map();
+
+    if (config.logPath) {
+      resetLog();
+    }
 
     newman
       .run(config)
@@ -200,6 +233,23 @@ function runNewman(config) {
 
         // Record start time
         requestTimings.set(args.item.name, Date.now());
+        const { request } = args;
+        const headerMembers = request.headers ? request.headers.members : {};
+        const requestHeaders = formatLogHeaders(headerMembers);
+        const contentType = request.headers ? request.headers.get('Content-Type') : undefined;
+        const requestBody =
+          request.body && request.body.raw
+            ? formatLogBody(request.body.raw, contentType)
+            : '';
+
+        requestLogs.set(args.item.name, {
+          timestamp: new Date().toISOString(),
+          method: request.method,
+          url: request.url.toString(),
+          headers: requestHeaders,
+          contentType,
+          body: requestBody,
+        });
 
         if (!hasStartedRequests) {
           hasStartedRequests = true;
@@ -233,6 +283,8 @@ function runNewman(config) {
         }
       })
       .on('request', (err, args) => {
+        if (hasFailure && shouldAbortOnError) return;
+
         if (err) {
           hasFailure = true;
           completedRequests++;
@@ -240,6 +292,21 @@ function runNewman(config) {
           updateProgress(completedRequests, totalRequests, progressMarks);
 
           logs.push(`  ${colors.red}Error: ${err.message}${colors.reset}`);
+          const requestLog = requestLogs.get(args.item.name) || {};
+          const duration = requestTimings.has(args.item.name)
+            ? Date.now() - requestTimings.get(args.item.name)
+            : 0;
+          writeLogEntry(config, [
+            `Request: ${args.item.name}`,
+            `Timestamp: ${requestLog.timestamp || new Date().toISOString()}`,
+            `Method: ${requestLog.method || 'unknown'}`,
+            `URL: ${requestLog.url || 'unknown'}`,
+            'Request Headers:',
+            requestLog.headers || '(none)',
+            ...(requestLog.body ? ['Request Body:', requestLog.body] : []),
+            `Runtime Error: ${err.message}`,
+            `Duration: ${formatDuration(duration)}`,
+          ]);
 
           if (shouldAbortOnError) {
             logs.push(
@@ -253,6 +320,7 @@ function runNewman(config) {
         const { response } = args;
         const duration = Date.now() - requestTimings.get(args.item.name);
         const durationCat = getDurationCategory(duration);
+        const requestLog = requestLogs.get(args.item.name) || {};
 
         if (response.code) {
           const failed = isFailedRequest(response);
@@ -323,6 +391,27 @@ function runNewman(config) {
               }
             }
           }
+
+          const responseHeaders = response.headers ? response.headers.members : {};
+          const responseContentType = response.headers ? response.headers.get('content-type') : '';
+          const responseBody = response.stream
+            ? formatLogBody(response.stream.toString(), responseContentType)
+            : '';
+
+          writeLogEntry(config, [
+            `Request: ${args.item.name}`,
+            `Timestamp: ${requestLog.timestamp || new Date().toISOString()}`,
+            `Method: ${requestLog.method || args.request.method}`,
+            `URL: ${requestLog.url || args.request.url.toString()}`,
+            'Request Headers:',
+            requestLog.headers || '(none)',
+            ...(requestLog.body ? ['Request Body:', requestLog.body] : []),
+            `Response Status: ${response.code} ${response.status}`,
+            'Response Headers:',
+            formatLogHeaders(responseHeaders),
+            ...(responseBody ? ['Response Body:', responseBody] : []),
+            `Duration: ${formatDuration(duration)}`,
+          ]);
         }
       })
       .on('console', (err, args) => {

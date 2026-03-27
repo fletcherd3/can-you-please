@@ -15,7 +15,7 @@ describe('setup', () => {
     jest.clearAllMocks();
   });
 
-  test('prompts for and saves the workspace directory', async () => {
+  test('prompts for and saves the Collection 3 repo path', async () => {
     const question = jest.fn().mockResolvedValue('/tmp/demo-workspace');
     const close = jest.fn();
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -27,7 +27,7 @@ describe('setup', () => {
 
     expect(question).toHaveBeenCalled();
     expect(saveWorkspaceDir).toHaveBeenCalledWith('/tmp/demo-workspace');
-    expect(logSpy).toHaveBeenCalledWith('Saved Collection 3 workspace: /tmp/demo-workspace');
+    expect(logSpy).toHaveBeenCalledWith('Saved Collection 3 repo: /tmp/demo-workspace');
 
     logSpy.mockRestore();
   });

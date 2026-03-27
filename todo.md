@@ -12,6 +12,4 @@
 - dirs for teams and more personal flows
 - docs to understand variable scopes https://learning.postman.com/docs/sending-requests/variables/variables/#defining-variables-in-scripts
 - the option to continue on failure
-- seperate cyp repo from the postman collection files
-- nice setup where you point to postman colleciton dir
 - "spaces" a dir, contain flows, usefull for testing
