@@ -2,9 +2,7 @@
 A simple CLI tool to help you run day-to-day tasks. Just ask nicely!
 
 ## Installation
-```bash
-npm install -g @zip/can-you-please
-```
+see Development section.
 
 ## Usage
 ```bash

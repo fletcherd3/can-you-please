@@ -13,3 +13,4 @@
 - docs to understand variable scopes https://learning.postman.com/docs/sending-requests/variables/variables/#defining-variables-in-scripts
 - the option to continue on failure
 - "spaces" a dir, contain flows, usefull for testing
+- move config into ~/.config

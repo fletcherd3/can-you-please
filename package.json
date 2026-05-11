@@ -25,15 +25,6 @@
   ],
   "author": "",
   "license": "ISC",
-  "publishConfig": {
-    "registry": "https://zipau.jfrog.io/artifactory/api/npm/npm-local/"
-  },
-  "repository": {
-    "name": "can you please",
-    "url": "git+ssh://git@gitlab.com/zip-fletcher.dick/can-you-please.git",
-    "type": "git",
-    "branch": "main"
-  },
   "dependencies": {
     "commander": "^12.1.0",
     "js-yaml": "^4.1.0",
