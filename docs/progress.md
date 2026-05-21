@@ -109,6 +109,22 @@ _commit acbdf82_
   directory creation, multi-request ordering, section content;
   all 73 tests pass; lint clean
 
+### 0006 — config persistence
+_commit db112a6_
+
+- `AppConfig` type `{ workspacePath: string }` in `src/config.ts`
+- `readConfig(): Promise<AppConfig | null>` — returns `null` when
+  file absent, invalid JSON, or missing `workspacePath` key
+- `writeConfig(patch: Partial<AppConfig>): Promise<void>` — merges
+  patch into existing file, preserving unknown keys for
+  forward-compatibility
+- config stored at `~/.config/can-you-please/config.json`
+- directory created automatically via `mkdir({ recursive: true })`
+- atomic write: write to `tmpdir` temp file then `rename` into place
+- 8 unit tests: missing file → null, invalid JSON → null, missing
+  key → null, round-trip, dir creation, unknown-key preservation,
+  overwrite, concurrent writes; all 81 tests pass; lint clean
+
 ## next up
 
-0006 — config persistence
+0007 — app shell and screen state machine
