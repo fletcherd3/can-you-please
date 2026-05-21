@@ -15,7 +15,7 @@ import { HelpOverlay } from "./ui/screens/HelpOverlay.js";
 // ---------------------------------------------------------------------------
 
 export type ScreenState =
-  | { screen: "setup-wizard" }
+  | { screen: "setup-wizard"; brokenPath?: string }
   | { screen: "flow-picker"; workspace: Workspace }
   | { screen: "env-picker"; workspace: Workspace; flow: AnyFlow }
   | {
@@ -60,13 +60,19 @@ export function App() {
       try {
         workspace = await loadWorkspace(config.workspacePath);
       } catch {
-        setScreenState({ screen: "setup-wizard" });
+        setScreenState({
+          screen: "setup-wizard",
+          brokenPath: config.workspacePath,
+        });
         setLoading(false);
         return;
       }
 
       if (!isValidWorkspace(workspace)) {
-        setScreenState({ screen: "setup-wizard" });
+        setScreenState({
+          screen: "setup-wizard",
+          brokenPath: config.workspacePath,
+        });
         setLoading(false);
         return;
       }
@@ -114,6 +120,7 @@ export function App() {
   if (screenState.screen === "setup-wizard") {
     return (
       <SetupWizardScreen
+        brokenPath={screenState.brokenPath}
         onDone={async (workspacePath) => {
           const workspace = await loadWorkspace(workspacePath);
           setScreenState({ screen: "flow-picker", workspace });
