@@ -1,0 +1,4 @@
+$kind: collection
+name: misc/ping
+description: ping the API
+order: 100

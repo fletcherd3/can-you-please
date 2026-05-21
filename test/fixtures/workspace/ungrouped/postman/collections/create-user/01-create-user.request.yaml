@@ -1,0 +1,9 @@
+$kind: http-request
+url: https://{{base}}/users
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: '{"firstName":"{{first-name}}"}'
+order: 1

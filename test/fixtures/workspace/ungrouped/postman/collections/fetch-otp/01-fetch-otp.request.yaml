@@ -1,0 +1,4 @@
+$kind: http-request
+url: https://{{base}}/otp/{{user-id}}
+method: GET
+order: 1

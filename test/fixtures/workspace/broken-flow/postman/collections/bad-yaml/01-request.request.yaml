@@ -1,0 +1,4 @@
+$kind: http-request
+url: https://{{base}}/something
+method: GET
+order: 1

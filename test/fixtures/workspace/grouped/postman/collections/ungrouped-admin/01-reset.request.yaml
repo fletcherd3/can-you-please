@@ -1,0 +1,4 @@
+$kind: http-request
+url: https://{{base}}/admin/reset
+method: POST
+order: 1

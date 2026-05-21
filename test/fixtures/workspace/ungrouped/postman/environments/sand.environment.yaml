@@ -1,0 +1,5 @@
+name: sand
+values:
+  - key: base
+    value: sand-api.example.com
+    enabled: true

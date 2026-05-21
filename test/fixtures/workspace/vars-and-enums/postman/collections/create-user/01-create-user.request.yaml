@@ -1,0 +1,13 @@
+$kind: http-request
+url: https://{{base}}/users
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: '{"firstName":"{{first-name}}","email":"{{email}}","product":"{{product}}"}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: pm.variables.set("user-id", pm.response.json().id)
+order: 1

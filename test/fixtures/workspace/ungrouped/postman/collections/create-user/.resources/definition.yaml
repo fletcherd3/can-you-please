@@ -1,0 +1,6 @@
+$kind: collection
+name: create user
+description: create a test user
+order: 100
+environments: [dev, sand]
+continueOnError: false

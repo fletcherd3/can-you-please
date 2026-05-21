@@ -1,0 +1,4 @@
+$kind: collection
+name: create user
+description: create a test user
+environments: [dev]

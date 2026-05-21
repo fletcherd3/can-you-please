@@ -1,0 +1,5 @@
+name: dev
+values:
+  - key: base
+    value: dev-api.example.com
+    enabled: true

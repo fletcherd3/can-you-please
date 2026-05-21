@@ -1,0 +1,4 @@
+$kind: collection
+name: admin reset
+description: reset admin state
+order: 50

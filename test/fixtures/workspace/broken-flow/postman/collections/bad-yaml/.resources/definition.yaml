@@ -1,0 +1,4 @@
+$kind: collection
+name: bad yaml
+: this is invalid yaml: [unclosed
+  - broken: [

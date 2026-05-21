@@ -1,0 +1,13 @@
+$kind: collection
+name: create user
+description: create a test user with product selection
+requires:
+  - first-name
+  - email
+variables:
+  base: api.example.com
+  product: zip-pay
+enums:
+  product:
+    - zip-pay
+    - zip-money

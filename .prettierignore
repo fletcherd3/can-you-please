@@ -3,3 +3,5 @@ node_modules/
 .me/
 *.md
 docs/
+# intentionally malformed fixture — not valid YAML
+test/fixtures/workspace/broken-flow/

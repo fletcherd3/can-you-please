@@ -1,0 +1,4 @@
+$kind: collection
+name: user-flows/fetch otp
+description: fetch a one-time password
+order: 200

@@ -1,0 +1,5 @@
+$kind: collection
+name: fetch otp
+description: fetch a one-time password
+order: 200
+environments: [dev, sand]
