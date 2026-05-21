@@ -82,6 +82,33 @@ _commit 37a8deb_
   capture, variable chaining, console capture, URL resolution,
   pre-run error; all 54 tests pass; lint clean
 
+### 0005 — run logger
+_commit acbdf82_
+
+- `createRunLogger(flow, logDir)` in `src/logger/index.ts` returns
+  a `RunLogger` (`write(event)` + `close(outcome)`)
+- `write()` buffers one section per request by pairing
+  `RequestStarted` with the following `RequestCompleted` event
+- `close(outcome)` creates `logDir` if needed and writes the log
+  under a timestamp-stamped filename
+- filename format:
+  `YYYY-MM-DD_HH-mm-ss_<group>__<flow>_<outcome>.log`;
+  ungrouped flows omit the `<group>__` prefix
+- each request section delimited by
+  `=== request N/M: <name> (METHOD status, Nms) ===`
+- section includes: ISO timestamp, resolved URL, request
+  headers/body (from flow definition), response status,
+  response headers, response body, console output,
+  variables set, error detail on failure
+- response bodies truncated at 1 MB with
+  `[truncated, original size: N bytes]` marker
+- `buildLogFilename`, `formatFileTimestamp`, `truncateBody`
+  exported for unit testing
+- 19 unit tests covering filename generation (grouped, ungrouped,
+  pass/fail), truncation boundary (exact, over, multi-byte),
+  directory creation, multi-request ordering, section content;
+  all 73 tests pass; lint clean
+
 ## next up
 
-0005 — run logger
+0006 — config persistence
