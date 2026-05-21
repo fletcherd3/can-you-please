@@ -145,6 +145,35 @@ _commit 292ec2d_
   `esc`, `?` keyboard interactions; 94 total tests pass
 - lint clean
 
+### 0008 — setup wizard screen
+_commit ca708eb_
+
+- `SetupWizardScreen` in `src/ui/screens/SetupWizardScreen.tsx`:
+  three-step flow — `mode-select`, `existing-path`,
+  `scaffold-config`
+- `brokenPath` prop: starts on `existing-path` step,
+  pre-fills input, shows inline validation error
+- directory input: live sub-directory suggestions via
+  `readdir`, tab-completes the longest common prefix,
+  `~` expands to `os.homedir()`
+- two modes clearly presented; `↑↓ + enter` navigates;
+  `esc` goes back one step
+- existing repo: validates with `isValidWorkspace()`,
+  inline error if invalid; writes config and calls
+  `onDone` on success
+- `scaffoldWorkspace(parentDir, name)` in
+  `src/workspace/scaffold.ts`: creates
+  `postman/collections/example-flow/`,
+  `postman/environments/`, `postman/globals/`,
+  example request + definition + dev env YAML
+- scaffolded workspace passes `isValidWorkspace()`
+  immediately
+- `app.tsx` updated to forward `brokenPath` to
+  `SetupWizardScreen` when configured path is invalid
+- footer hotkeys on every step
+- 22 new tests (UI + scaffold integration); 116 total;
+  lint clean
+
 ## next up
 
-0008 — setup wizard screen
+0009 — flow picker screen
