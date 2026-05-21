@@ -215,6 +215,27 @@ _commit 47421f8_
   exits 1
 - all 142 tests pass; lint clean
 
+### 0010 — env picker screen
+_commit df6407e_
+
+- `EnvPickerScreen` in `src/ui/screens/EnvPickerScreen.tsx`:
+  shows all workspace envs when flow declares 0 environments;
+  shows only declared envs when flow declares ≥2 environments;
+  shows all envs for broken flows
+- reuses `FilterableList` component; footer hints
+  `↑↓ nav · enter select · esc back · ? help`
+- `initialEnvId` prop pre-positions cursor to the env that
+  matched the flow-picker env filter
+- `FilterableList` updated with `initialIndex` prop
+- `FlowPickerScreen.onSelect` now passes `activeEnvId` as
+  second argument
+- `app.tsx` updated: skips env-picker entirely when flow
+  declares exactly one environment (auto-selects it); skips
+  variables-form when flow has zero detected variables
+  (goes straight to run-view)
+- 13 new tests covering title, footer, env filtering, esc,
+  enter-selects, pre-selection, help key; 155 total; lint clean
+
 ## next up
 
-0010 — env picker screen
+0011 — variables form screen
