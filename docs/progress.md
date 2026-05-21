@@ -194,26 +194,6 @@ _commit cef2c3f_
 - 26 new tests (rendering, text filter, overlays, select,
   broken flow error, reload); all 142 tests pass; lint clean
 
-### 0014 — npm distribution
-_commit 47421f8_
-
-- `package.json` publish fields completed: `keywords`, `author`,
-  `repository`, `homepage`, `bugs` all populated
-- `@types/react` and `ink-testing-library` moved to
-  `devDependencies` (not needed at runtime)
-- `.npmignore` created: excludes `src/`, `test/`, `docs/`, `.me/`,
-  `*.md` (except root `README.md`), `tsconfig.json`, `eslint.config.js`,
-  `.prettierignore`, `progress.txt`, `AGENTS.md`, `CONTEXT.md`
-- `README.md` rewritten: covers what it is, `npm install -g` / `npx`
-  install, Node ≥ 22 prerequisite, Collection 3 workspace prereq,
-  quick-start, workspace layout, key bindings
-- `LICENSE` file added (MIT, 2025 Fletcher Dick)
-- `npm run build && npm publish --dry-run` passes; packed files are
-  `LICENSE`, `README.md`, `dist/**`, `package.json` only (67 files)
-- Node <22 hard-fail verified: simulated Node 20 prints error and
-  exits 1
-- all 142 tests pass; lint clean
-
 ### 0010 — env picker screen
 _commit df6407e_
 
@@ -262,8 +242,37 @@ _commit 5863758_
   submit, required-error, dropdown open/select/esc);
   175 total; lint clean
 
+### 0012 — run view screen
+_commit 1cde850_
+
+- `DetailPane` component in `src/ui/components/DetailPane.tsx`:
+  scrollable lines; sections for request (method, URL, headers,
+  body), response (status, duration, headers, JSON-pretty body),
+  console output, variables set, failure summary
+- `RunViewScreen` in `src/ui/screens/RunViewScreen.tsx`:
+  split-pane layout — request list left, detail pane right
+- request list rows: glyph · method · status · duration · name
+  · `💬` when console output present
+- glyphs: `✓` pass, `✗` fail (red), `⋯` pending (dim), `▶`
+  running (orange spinner), `—` cancelled (dim)
+- progress bar: `N/M requests`, orange fill, live updates
+- auto-follow running request; `↑`/`↓` detaches; `f` re-attaches
+- `tab` toggles detail pane; `d` jumps focus to detail
+- detail pane auto-shown on run failure
+- `esc` mid-run: aborts run, marks remaining cancelled, stays
+  on run view; second `esc` returns to flow picker
+- `r` post-run: reloads workspace from disk, re-runs same flow
+- `c` key toggles continue-on-error
+- run logger called on every event; `close()` on completion
+- only one run at a time; `r` inactive while running
+- footer hints differ during-run vs post-run
+- `_runFlowFn` injection prop for test isolation
+- fixed `app.test.js` `RunViewScreen` stub test: now passes an
+  instant-completing `_runFlowFn` so ESC hits the post-run path
+- 33 new tests in `run-view.test.js`; 208 total; lint clean
+
 ### 0013 — help overlay
-_commit TBD_
+_commit 06f63f0_
 
 - `HelpOverlay` in `src/ui/screens/HelpOverlay.tsx`: full
   implementation replacing the coming-soon stub
@@ -296,31 +305,22 @@ _commit TBD_
   section visibility, navigation, all four actions, footer path
   display, fallback for missing workspacePath; 221 total; lint clean
 
-### 0012 — run view screen
-_commit 1cde850_
+### 0014 — npm distribution
+_commit 47421f8_
 
-- `DetailPane` component in `src/ui/components/DetailPane.tsx`:
-  scrollable lines; sections for request (method, URL, headers,
-  body), response (status, duration, headers, JSON-pretty body),
-  console output, variables set, failure summary
-- `RunViewScreen` in `src/ui/screens/RunViewScreen.tsx`:
-  split-pane layout — request list left, detail pane right
-- request list rows: glyph · method · status · duration · name
-  · `💬` when console output present
-- glyphs: `✓` pass, `✗` fail (red), `⋯` pending (dim), `▶`
-  running (orange spinner), `—` cancelled (dim)
-- progress bar: `N/M requests`, orange fill, live updates
-- auto-follow running request; `↑`/`↓` detaches; `f` re-attaches
-- `tab` toggles detail pane; `d` jumps focus to detail
-- detail pane auto-shown on run failure
-- `esc` mid-run: aborts run, marks remaining cancelled, stays
-  on run view; second `esc` returns to flow picker
-- `r` post-run: reloads workspace from disk, re-runs same flow
-- `c` key toggles continue-on-error
-- run logger called on every event; `close()` on completion
-- only one run at a time; `r` inactive while running
-- footer hints differ during-run vs post-run
-- `_runFlowFn` injection prop for test isolation
-- fixed `app.test.js` `RunViewScreen` stub test: now passes an
-  instant-completing `_runFlowFn` so ESC hits the post-run path
-- 33 new tests in `run-view.test.js`; 208 total; lint clean
+- `package.json` publish fields completed: `keywords`, `author`,
+  `repository`, `homepage`, `bugs` all populated
+- `@types/react` and `ink-testing-library` moved to
+  `devDependencies` (not needed at runtime)
+- `.npmignore` created: excludes `src/`, `test/`, `docs/`, `.me/`,
+  `*.md` (except root `README.md`), `tsconfig.json`, `eslint.config.js`,
+  `.prettierignore`, `progress.txt`, `AGENTS.md`, `CONTEXT.md`
+- `README.md` rewritten: covers what it is, `npm install -g` / `npx`
+  install, Node ≥ 22 prerequisite, Collection 3 workspace prereq,
+  quick-start, workspace layout, key bindings
+- `LICENSE` file added (MIT, 2025 Fletcher Dick)
+- `npm run build && npm publish --dry-run` passes; packed files list
+  is `LICENSE`, `README.md`, `dist/**`, `package.json` only (75 files)
+- Node <22 hard-fail verified: `dist/bin.js` guard prints error and
+  exits 1 before any dynamic imports
+- all 221 tests pass; lint clean
