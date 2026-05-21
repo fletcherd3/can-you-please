@@ -17,7 +17,6 @@ _commit c9f1852_
 - `test/fixtures/workspace/` directory created (empty)
 - placeholder `node:test` suite passes
 - `.gitignore` excludes `node_modules/` and `dist/`
-- all acceptance criteria in tracker 0001 satisfied
 
 ### 0002 — workspace loader
 _commit dcf9314_
@@ -263,6 +262,40 @@ _commit 5863758_
   submit, required-error, dropdown open/select/esc);
   175 total; lint clean
 
+### 0013 — help overlay
+_commit TBD_
+
+- `HelpOverlay` in `src/ui/screens/HelpOverlay.tsx`: full
+  implementation replacing the coming-soon stub
+- floating box with `borderStyle="round"` + orange border
+- **keys section**: read-only; rendered when `keys` prop is
+  non-empty; hides entirely when no keys supplied
+- **actions section**: `↑↓` navigable with orange `>` accent
+  on selected row; four actions:
+  - `change workspace` — calls `onChangeWorkspace`
+  - `show log directory` — shows `logDir` path in footer
+  - `show workspace path` — shows `workspacePath` in footer
+  - `quit` — calls `onQuit`
+- footer: `↑↓ nav · enter select · esc close`; replaced by
+  path string when a path action is executed
+- `?` or `esc` closes the overlay
+- `app.tsx` updated:
+  - adds `LOG_DIR` constant (`~/.local/share/can-you-please/logs`)
+  - `getScreenKeys(screenState)` derives per-screen key reference
+    from the global PRD hotkey table (five screens covered)
+  - `HelpOverlay` now receives `onChangeWorkspace`, `onQuit`,
+    `workspacePath`, `logDir`, and `keys` props
+  - `onChangeWorkspace`: closes overlay + routes to setup wizard
+  - `onQuit`: `exit()` + `process.exit(0)`
+  - `workspacePath` sourced from `screenState.workspace.rootPath`
+    (undefined on setup-wizard screen)
+- updated `app.test.js`: `HelpOverlay renders stub text` test
+  updated to check for "help" and "actions"; esc/? close tests
+  pass new required props
+- 13 new tests in `help-overlay.test.js`: rendering, keys
+  section visibility, navigation, all four actions, footer path
+  display, fallback for missing workspacePath; 221 total; lint clean
+
 ### 0012 — run view screen
 _commit 1cde850_
 
@@ -291,7 +324,3 @@ _commit 1cde850_
 - fixed `app.test.js` `RunViewScreen` stub test: now passes an
   instant-completing `_runFlowFn` so ESC hits the post-run path
 - 33 new tests in `run-view.test.js`; 208 total; lint clean
-
-## next up
-
-0013 — help overlay

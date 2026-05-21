@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useApp, useInput } from "ink";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { readConfig } from "./config.js";
 import { loadWorkspace, isValidWorkspace } from "./workspace/index.js";
 import { detectVariables } from "./variables/index.js";
@@ -9,7 +11,73 @@ import { FlowPickerScreen } from "./ui/screens/FlowPickerScreen.js";
 import { EnvPickerScreen } from "./ui/screens/EnvPickerScreen.js";
 import { VariablesFormScreen } from "./ui/screens/VariablesFormScreen.js";
 import { RunViewScreen } from "./ui/screens/RunViewScreen.js";
-import { HelpOverlay } from "./ui/screens/HelpOverlay.js";
+import { HelpOverlay, type HelpKey } from "./ui/screens/HelpOverlay.js";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const LOG_DIR = join(
+  homedir(),
+  ".local",
+  "share",
+  "can-you-please",
+  "logs",
+);
+
+// ---------------------------------------------------------------------------
+// Per-screen key reference
+// ---------------------------------------------------------------------------
+
+function getScreenKeys(state: ScreenState): HelpKey[] {
+  switch (state.screen) {
+    case "setup-wizard":
+      return [
+        { key: "↑↓", description: "navigate" },
+        { key: "enter", description: "confirm" },
+        { key: "tab", description: "autocomplete" },
+        { key: "esc", description: "back" },
+      ];
+    case "flow-picker":
+      return [
+        { key: "↑↓", description: "navigate" },
+        { key: "enter", description: "select" },
+        { key: "esc", description: "clear filter / quit" },
+        { key: "e", description: "env filter" },
+        { key: "g", description: "group filter" },
+        { key: "shift-R", description: "reload workspace" },
+      ];
+    case "env-picker":
+      return [
+        { key: "↑↓", description: "navigate" },
+        { key: "enter", description: "select" },
+        { key: "esc", description: "back" },
+      ];
+    case "variables-form":
+      return [
+        { key: "tab / shift-tab", description: "next / prev field" },
+        { key: "↑↓", description: "dropdown" },
+        { key: "c", description: "toggle continue-on-error" },
+        { key: "enter", description: "run" },
+        { key: "esc", description: "back" },
+      ];
+    case "run-view":
+      return [
+        { key: "↑↓", description: "navigate requests" },
+        { key: "tab", description: "toggle detail pane" },
+        { key: "d", description: "jump to detail" },
+        { key: "f", description: "re-attach to running" },
+        { key: "c", description: "toggle continue-on-error" },
+        { key: "r", description: "re-run (post-run)" },
+        { key: "esc", description: "abort / back" },
+      ];
+    default: {
+      const _exhaustive: never = state;
+      void _exhaustive;
+      return [];
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Screen state discriminated union
@@ -116,7 +184,26 @@ export function App() {
   if (loading) return null;
 
   if (showHelp) {
-    return <HelpOverlay onClose={() => setShowHelp(false)} />;
+    const workspacePath =
+      screenState.screen !== "setup-wizard"
+        ? screenState.workspace.rootPath
+        : undefined;
+    return (
+      <HelpOverlay
+        onClose={() => setShowHelp(false)}
+        onChangeWorkspace={() => {
+          setShowHelp(false);
+          setScreenState({ screen: "setup-wizard" });
+        }}
+        onQuit={() => {
+          exit();
+          process.exit(0);
+        }}
+        workspacePath={workspacePath}
+        logDir={LOG_DIR}
+        keys={getScreenKeys(screenState)}
+      />
+    );
   }
 
   // ------------------------------------------------------------------

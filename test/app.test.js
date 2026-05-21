@@ -163,13 +163,17 @@ test("RunViewScreen renders stub text", async () => {
   unmount();
 });
 
-test("HelpOverlay renders stub text", async () => {
+test("HelpOverlay renders", async () => {
   const { lastFrame, unmount } = render(
     React.createElement(HelpOverlay, { onClose: () => {} }),
   );
   assert.ok(
-    lastFrame().includes("help overlay"),
-    `expected "help overlay" in: ${lastFrame()}`,
+    lastFrame().includes("help"),
+    `expected "help" in: ${lastFrame()}`,
+  );
+  assert.ok(
+    lastFrame().includes("actions"),
+    `expected "actions" in: ${lastFrame()}`,
   );
   unmount();
 });
@@ -287,6 +291,8 @@ test("HelpOverlay: esc calls onClose", async () => {
       onClose: () => {
         closeCalled = true;
       },
+      onChangeWorkspace: () => {},
+      onQuit: () => {},
     }),
   );
   stdin.write("\x1b");
@@ -302,6 +308,8 @@ test("HelpOverlay: ? calls onClose", async () => {
       onClose: () => {
         closeCalled = true;
       },
+      onChangeWorkspace: () => {},
+      onQuit: () => {},
     }),
   );
   stdin.write("?");
