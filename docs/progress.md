@@ -195,6 +195,26 @@ _commit cef2c3f_
 - 26 new tests (rendering, text filter, overlays, select,
   broken flow error, reload); all 142 tests pass; lint clean
 
+### 0014 — npm distribution
+_commit 47421f8_
+
+- `package.json` publish fields completed: `keywords`, `author`,
+  `repository`, `homepage`, `bugs` all populated
+- `@types/react` and `ink-testing-library` moved to
+  `devDependencies` (not needed at runtime)
+- `.npmignore` created: excludes `src/`, `test/`, `docs/`, `.me/`,
+  `*.md` (except root `README.md`), `tsconfig.json`, `eslint.config.js`,
+  `.prettierignore`, `progress.txt`, `AGENTS.md`, `CONTEXT.md`
+- `README.md` rewritten: covers what it is, `npm install -g` / `npx`
+  install, Node ≥ 22 prerequisite, Collection 3 workspace prereq,
+  quick-start, workspace layout, key bindings
+- `LICENSE` file added (MIT, 2025 Fletcher Dick)
+- `npm run build && npm publish --dry-run` passes; packed files are
+  `LICENSE`, `README.md`, `dist/**`, `package.json` only (67 files)
+- Node <22 hard-fail verified: simulated Node 20 prints error and
+  exits 1
+- all 142 tests pass; lint clean
+
 ## next up
 
 0010 — env picker screen
