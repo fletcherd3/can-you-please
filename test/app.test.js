@@ -113,15 +113,47 @@ test("VariablesFormScreen renders stub text", async () => {
   unmount();
 });
 
+/** Immediately-completing no-op run for use in app.test.js stubs. */
+function makeInstantRunFn() {
+  return function () {
+    let done = false;
+    return {
+      [Symbol.asyncIterator]() {
+        return {
+          next() {
+            if (done) return Promise.resolve({ done: true, value: undefined });
+            done = true;
+            return Promise.resolve({
+              done: false,
+              value: {
+                type: "RunFinished",
+                totalRequests: 0,
+                failedRequests: 0,
+                durationMs: 0,
+              },
+            });
+          },
+          return() {
+            done = true;
+            return Promise.resolve({ done: true, value: undefined });
+          },
+        };
+      },
+    };
+  };
+}
+
 test("RunViewScreen renders stub text", async () => {
   const { lastFrame, unmount } = render(
     React.createElement(RunViewScreen, {
+      workspace: stubWorkspace,
       flow: stubFlow,
       env: stubEnv,
       variables: {},
       continueOnError: false,
       onBack: () => {},
       onHelp: () => {},
+      _runFlowFn: makeInstantRunFn(),
     }),
   );
   assert.ok(
@@ -227,6 +259,7 @@ test("RunViewScreen: esc calls onBack", async () => {
   let backCalled = false;
   const { stdin, unmount } = render(
     React.createElement(RunViewScreen, {
+      workspace: stubWorkspace,
       flow: stubFlow,
       env: stubEnv,
       variables: {},
@@ -235,8 +268,12 @@ test("RunViewScreen: esc calls onBack", async () => {
         backCalled = true;
       },
       onHelp: () => {},
+      // instant run so ESC post-run calls onBack (not abort)
+      _runFlowFn: makeInstantRunFn(),
     }),
   );
+  // wait for the instant run to finish before pressing esc
+  await new Promise((r) => setTimeout(r, 100));
   stdin.write("\x1b");
   await new Promise((r) => setTimeout(r, 50));
   assert.ok(backCalled, "onBack should have been called on ESC");

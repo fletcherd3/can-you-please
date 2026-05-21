@@ -258,6 +258,7 @@ export function App() {
     const { workspace, flow, env, variables, continueOnError } = screenState;
     return (
       <RunViewScreen
+        workspace={workspace}
         flow={flow}
         env={env}
         variables={variables}
