@@ -1,0 +1,27 @@
+# source & tests
+src/
+test/
+
+# docs & dev notes
+docs/
+.me/
+
+# markdown (root README.md is kept by default — list exceptions below)
+*.md
+!README.md
+
+# typescript config
+tsconfig.json
+*.tsbuildinfo
+
+# linting
+eslint.config.js
+.eslintrc*
+.prettierrc*
+
+# misc
+AGENTS.md
+CONTEXT.md
+.gitignore
+.prettierignore
+progress.txt

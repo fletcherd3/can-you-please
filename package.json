@@ -14,21 +14,36 @@
     "test": "tsc && node --test",
     "lint": "eslint . && prettier --check ."
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "tui",
+    "postman",
+    "newman",
+    "api",
+    "cli",
+    "collection"
+  ],
+  "author": "Fletcher Dick",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fletcherd3/can-you-please.git"
+  },
+  "homepage": "https://github.com/fletcherd3/can-you-please#readme",
+  "bugs": {
+    "url": "https://github.com/fletcherd3/can-you-please/issues"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/react": "^19.2.15",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
+    "ink-testing-library": "^4.0.0",
     "prettier": "^3.0.0",
     "typescript": "^5.5.0"
   },
   "dependencies": {
-    "@types/react": "^19.2.15",
     "ink": "^7.0.3",
-    "ink-testing-library": "^4.0.0",
     "newman": "^6.2.2",
     "react": "^19.2.6",
     "yaml": "^2.9.0"
