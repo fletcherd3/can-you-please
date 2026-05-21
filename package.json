@@ -26,7 +26,11 @@
     "typescript": "^5.5.0"
   },
   "dependencies": {
+    "@types/react": "^19.2.15",
+    "ink": "^7.0.3",
+    "ink-testing-library": "^4.0.0",
     "newman": "^6.2.2",
+    "react": "^19.2.6",
     "yaml": "^2.9.0"
   }
 }

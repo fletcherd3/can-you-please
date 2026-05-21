@@ -9,6 +9,9 @@ if (major < 22) {
   process.exit(1);
 }
 
-// TODO: launch TUI
-process.stdout.write("not yet implemented\n");
-process.exit(0);
+// Node version check must fire before Ink renders.
+import("react").then(async (React) => {
+  const { render } = await import("ink");
+  const { App } = await import("./app.js");
+  render(React.createElement(App));
+});
