@@ -236,6 +236,33 @@ _commit df6407e_
 - 13 new tests covering title, footer, env filtering, esc,
   enter-selects, pre-selection, help key; 155 total; lint clean
 
+### 0011 — variables form screen
+_commit 5863758_
+
+- `EnumInput` component in `src/ui/components/EnumInput.tsx`:
+  free-text input; arrow-down opens inline dropdown of
+  enum suggestions; selecting fills the field; user can
+  still type freely; esc closes dropdown
+- `VariablesFormScreen` in
+  `src/ui/screens/VariablesFormScreen.tsx`: two sections
+  (`required` at top, `optional` below de-emphasised)
+- field values pre-filled from `resolveVariables(flow, env,
+  globals, {})` full five-layer merge
+- `tab` / `shift-tab` cycle focus; `↑↓` navigate within
+  open dropdown only
+- submitting with blank required field focuses first blank,
+  shows inline `required` error; other fields unblocked
+- `c` key toggles continue-on-error; initial value from
+  `flow.continueOnError`; label dimmed off / orange on
+- `esc` calls `onBack`; `?` calls `onHelp`
+- footer: `tab next · ↑↓ dropdown · c continue-on-error
+  · enter run · esc back · ? help`
+- `app.tsx` updated to pass `globals={workspace.globals}`
+  to `VariablesFormScreen`
+- 20 new tests (title, sections, pre-fill, tab, c-toggle,
+  submit, required-error, dropdown open/select/esc);
+  175 total; lint clean
+
 ## next up
 
-0011 — variables form screen
+0012 — run view screen
