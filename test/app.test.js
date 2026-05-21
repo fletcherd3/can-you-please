@@ -19,6 +19,13 @@ import { RunViewScreen } from "../dist/ui/screens/RunViewScreen.js";
 import { HelpOverlay } from "../dist/ui/screens/HelpOverlay.js";
 
 // Minimal stub objects for props
+const stubWorkspace = {
+  rootPath: "/tmp/test-ws",
+  flows: [],
+  environments: [],
+  globals: null,
+};
+
 const stubFlow = {
   kind: "flow",
   folderPath: "/tmp/test",
@@ -55,11 +62,12 @@ test("SetupWizardScreen renders stub text", async () => {
   unmount();
 });
 
-test("FlowPickerScreen renders stub text", async () => {
+test("FlowPickerScreen renders title", async () => {
   const { lastFrame, unmount } = render(
     React.createElement(FlowPickerScreen, {
-      flows: [],
+      workspace: stubWorkspace,
       onSelect: () => {},
+      onReload: () => {},
       onQuit: () => {},
       onHelp: () => {},
     }),
@@ -138,22 +146,22 @@ test("HelpOverlay renders stub text", async () => {
 // Keyboard interaction
 // ---------------------------------------------------------------------------
 
-test("FlowPickerScreen: q calls onQuit and triggers exit", async () => {
+test("FlowPickerScreen: esc with no filter calls onQuit", async () => {
   let quitCalled = false;
   const { stdin, unmount } = render(
     React.createElement(FlowPickerScreen, {
-      flows: [],
+      workspace: stubWorkspace,
       onSelect: () => {},
+      onReload: () => {},
       onQuit: () => {
         quitCalled = true;
       },
       onHelp: () => {},
     }),
   );
-  stdin.write("q");
-  // Give React a tick to process.
+  stdin.write("\x1b"); // esc
   await new Promise((r) => setTimeout(r, 50));
-  assert.ok(quitCalled, "onQuit should have been called on 'q'");
+  assert.ok(quitCalled, "onQuit should have been called on esc");
   unmount();
 });
 
@@ -161,8 +169,9 @@ test("FlowPickerScreen: ? calls onHelp", async () => {
   let helpCalled = false;
   const { stdin, unmount } = render(
     React.createElement(FlowPickerScreen, {
-      flows: [],
+      workspace: stubWorkspace,
       onSelect: () => {},
+      onReload: () => {},
       onQuit: () => {},
       onHelp: () => {
         helpCalled = true;

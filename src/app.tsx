@@ -133,9 +133,12 @@ export function App() {
     const { workspace } = screenState;
     return (
       <FlowPickerScreen
-        flows={workspace.flows}
+        workspace={workspace}
         onSelect={(flow) => {
           setScreenState({ screen: "env-picker", workspace, flow });
+        }}
+        onReload={(newWorkspace) => {
+          setScreenState({ screen: "flow-picker", workspace: newWorkspace });
         }}
         onQuit={() => {
           exit();
