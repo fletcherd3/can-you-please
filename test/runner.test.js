@@ -96,8 +96,11 @@ before(async () => {
   baseUrl = `http://localhost:${port}`;
 });
 
-after(() => {
-  server.close();
+after(async () => {
+  // Force-close any keep-alive connections so server.close() resolves
+  // immediately rather than waiting for the keepAliveTimeout (default 5 s).
+  server.closeAllConnections();
+  await new Promise((resolve) => server.close(resolve));
 });
 
 // ---------------------------------------------------------------------------
