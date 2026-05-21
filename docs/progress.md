@@ -263,6 +263,35 @@ _commit 5863758_
   submit, required-error, dropdown open/select/esc);
   175 total; lint clean
 
+### 0012 — run view screen
+_commit 1cde850_
+
+- `DetailPane` component in `src/ui/components/DetailPane.tsx`:
+  scrollable lines; sections for request (method, URL, headers,
+  body), response (status, duration, headers, JSON-pretty body),
+  console output, variables set, failure summary
+- `RunViewScreen` in `src/ui/screens/RunViewScreen.tsx`:
+  split-pane layout — request list left, detail pane right
+- request list rows: glyph · method · status · duration · name
+  · `💬` when console output present
+- glyphs: `✓` pass, `✗` fail (red), `⋯` pending (dim), `▶`
+  running (orange spinner), `—` cancelled (dim)
+- progress bar: `N/M requests`, orange fill, live updates
+- auto-follow running request; `↑`/`↓` detaches; `f` re-attaches
+- `tab` toggles detail pane; `d` jumps focus to detail
+- detail pane auto-shown on run failure
+- `esc` mid-run: aborts run, marks remaining cancelled, stays
+  on run view; second `esc` returns to flow picker
+- `r` post-run: reloads workspace from disk, re-runs same flow
+- `c` key toggles continue-on-error
+- run logger called on every event; `close()` on completion
+- only one run at a time; `r` inactive while running
+- footer hints differ during-run vs post-run
+- `_runFlowFn` injection prop for test isolation
+- fixed `app.test.js` `RunViewScreen` stub test: now passes an
+  instant-completing `_runFlowFn` so ESC hits the post-run path
+- 33 new tests in `run-view.test.js`; 208 total; lint clean
+
 ## next up
 
-0012 — run view screen
+0013 — help overlay
