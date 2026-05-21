@@ -174,6 +174,27 @@ _commit ca708eb_
 - 22 new tests (UI + scaffold integration); 116 total;
   lint clean
 
+### 0009 — flow picker screen
+_commit cef2c3f_
+
+- `FilterableList` component in `src/ui/components/FilterableList.tsx`:
+  navigation (up/down/enter/esc), optional group section headers,
+  orange `>` accent on selected row, zero-results
+  "nothing here, sorry!" state
+- `FlowPickerScreen` in `src/ui/screens/FlowPickerScreen.tsx`:
+  type-to-filter always on (text filter via `useInput`),
+  env filter overlay (`e` key), group filter overlay (`g` key),
+  status row `env: <name> · group: <name> · N of M flows`,
+  text filter indicator `/ <filter>█`, broken flow inline
+  error on enter, duplicate flow `⚠` glyph, `shift-R` reload,
+  `esc` clears filter then quits, footer hotkeys
+- `OverlayPicker` sub-component: self-contained filterable list
+  overlay for env/group selection, `✓` on active item
+- `app.tsx` updated: passes `workspace` (not `flows`) +
+  `onReload` callback to `FlowPickerScreen`
+- 26 new tests (rendering, text filter, overlays, select,
+  broken flow error, reload); all 142 tests pass; lint clean
+
 ## next up
 
-0009 — flow picker screen
+0010 — env picker screen
