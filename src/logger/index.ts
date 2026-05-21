@@ -103,17 +103,28 @@ function buildSection(
   lines.push(`url: ${completed.url || started.url}`);
   lines.push(``);
 
-  // Request detail (headers + body from flow definition)
-  if (requestDef != null) {
-    lines.push(`request headers:`);
-    lines.push(formatHeaders(requestDef.headers));
-    if (requestDef.body != null) {
-      lines.push(``);
-      lines.push(`request body:`);
-      lines.push(requestDef.body.content);
-    }
+  // Request detail — prefer the resolved headers/body actually sent over
+  // the wire, falling back to the flow definition only if (somehow) the
+  // beforeRequest event didn't populate them.
+  const headersToLog =
+    completed.requestHeaders != null &&
+    Object.keys(completed.requestHeaders).length > 0
+      ? completed.requestHeaders
+      : (requestDef?.headers ?? {});
+  lines.push(`request headers:`);
+  lines.push(formatHeaders(headersToLog));
+
+  const bodyToLog =
+    completed.requestBody ??
+    (requestDef?.body != null
+      ? { mode: requestDef.body.type, content: requestDef.body.content }
+      : undefined);
+  if (bodyToLog != null) {
     lines.push(``);
+    lines.push(`request body:`);
+    lines.push(bodyToLog.content);
   }
+  lines.push(``);
 
   // Response
   lines.push(`response status: ${completed.status} ${completed.statusText}`);

@@ -1,5 +1,6 @@
 import { run as newmanRun } from "newman";
 import type { Flow } from "../domain.js";
+import { isValidJsonBody } from "../workspace/json-body.js";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -29,6 +30,10 @@ export interface RequestCompletedEvent {
   responseTimeMs: number;
   headers: Record<string, string>;
   body: string;
+  /** Resolved request headers as actually sent (variables substituted) */
+  requestHeaders: Record<string, string>;
+  /** Resolved request body as actually sent (variables substituted) */
+  requestBody?: { mode: string; content: string };
   /** true for any non-2xx status */
   failed: boolean;
   failureMessage?: string;
@@ -127,12 +132,8 @@ function buildEnvironment(
 function validateJsonBodies(flow: Flow): string[] {
   const errors: string[] = [];
   for (const req of flow.requests) {
-    if (req.body?.type === "json") {
-      try {
-        JSON.parse(req.body.content);
-      } catch {
-        errors.push(`${req.name}: invalid JSON body`);
-      }
+    if (req.body?.type === "json" && !isValidJsonBody(req.body.content)) {
+      errors.push(`${req.name}: invalid JSON body`);
     }
   }
   return errors;
@@ -154,6 +155,55 @@ function headersFromNewman(
     out[entry.key] = entry.value;
   }
   return out;
+}
+
+/**
+ * Extract resolved headers from a Newman beforeRequest request object.
+ * Reads from `headers.members[]` since that's the canonical list (the
+ * `reference` map can collide on duplicate keys / be out of sync).
+ */
+function headersFromRequest(
+  request: AnyObj | undefined,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  const members = (request?.["headers"]?.["members"] ?? []) as Array<{
+    key: string;
+    value: string;
+    disabled?: boolean;
+  }>;
+  for (const m of members) {
+    if (m.disabled) continue;
+    out[m.key] = m.value;
+  }
+  return out;
+}
+
+/**
+ * Extract resolved request body from a Newman beforeRequest request object.
+ * Returns `undefined` when there's no body. Only `raw` mode is fully captured
+ * (the only mode our runner emits); other modes return their stringified form.
+ */
+function bodyFromRequest(
+  request: AnyObj | undefined,
+): { mode: string; content: string } | undefined {
+  const body = request?.["body"] as AnyObj | undefined;
+  if (body == null) return undefined;
+  const mode = String(body["mode"] ?? "raw");
+  if (mode === "raw") {
+    const raw = body["raw"];
+    if (raw == null) return undefined;
+    return { mode, content: String(raw) };
+  }
+  // Fallback for non-raw modes — stringify whatever the SDK gives us
+  try {
+    const str = (body["toString"] as (() => string) | undefined)?.();
+    if (typeof str === "string" && str.length > 0) {
+      return { mode, content: str };
+    }
+  } catch {
+    // ignore
+  }
+  return undefined;
 }
 
 function parsedErrorFromBody(body: string): ParsedResponseError | undefined {
@@ -212,9 +262,19 @@ export function runFlow(
         RequestStartedEvent,
         "name" | "method" | "url"
       > | null = null;
+      let pendingResolvedHeaders: Record<string, string> = {};
+      let pendingResolvedBody: { mode: string; content: string } | undefined =
+        undefined;
       let pendingResponseMeta: Omit<
         RequestCompletedEvent,
-        "type" | "name" | "method" | "url" | "consoleOutput" | "variablesSet"
+        | "type"
+        | "name"
+        | "method"
+        | "url"
+        | "consoleOutput"
+        | "variablesSet"
+        | "requestHeaders"
+        | "requestBody"
       > | null = null;
 
       function push(event: RunEvent): void {
@@ -272,6 +332,8 @@ export function runFlow(
           consoleBuffer = [];
           varsSetBuffer = {};
           pendingRequestMeta = null;
+          pendingResolvedHeaders = {};
+          pendingResolvedBody = undefined;
           pendingResponseMeta = null;
         });
 
@@ -290,11 +352,17 @@ export function runFlow(
         });
 
         emitter.on("beforeRequest", (_err: unknown, args: AnyObj) => {
+          const request = args["request"] as AnyObj | undefined;
           pendingRequestMeta = {
             name: String(args["item"]?.["name"] ?? ""),
-            method: String(args["request"]?.["method"] ?? ""),
-            url: String(args["request"]?.["url"] ?? ""),
+            method: String(request?.["method"] ?? ""),
+            url: String(request?.["url"] ?? ""),
           };
+          // Capture resolved headers / body — these reflect what was actually
+          // sent over the wire (variables substituted, pre-request script
+          // mutations applied).
+          pendingResolvedHeaders = headersFromRequest(request);
+          pendingResolvedBody = bodyFromRequest(request);
           push({
             type: "RequestStarted",
             ...pendingRequestMeta,
@@ -347,6 +415,8 @@ export function runFlow(
             responseTimeMs: pendingResponseMeta?.responseTimeMs ?? 0,
             headers: pendingResponseMeta?.headers ?? {},
             body: pendingResponseMeta?.body ?? "",
+            requestHeaders: { ...pendingResolvedHeaders },
+            requestBody: pendingResolvedBody,
             failed: pendingResponseMeta?.failed ?? false,
             failureMessage: pendingResponseMeta?.failureMessage,
             consoleOutput: [...consoleBuffer],

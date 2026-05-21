@@ -306,6 +306,51 @@ test("console output captured in consoleOutput", async () => {
   );
 });
 
+test("resolved request headers + body captured on RequestCompleted", async () => {
+  // Lock in the contract that Newman's beforeRequest event provides headers
+  // and body with {{variables}} already substituted, and that our runner
+  // surfaces them on the completed event for the detail pane / logger to use.
+  const flow = makeFlow({
+    requests: [
+      makeRequest("resolved-req", `${baseUrl}/ok`, {
+        method: "POST",
+        headers: { Authorization: "Bearer {{tok}}" },
+        body: { type: "json", content: '{"id":"{{userId}}"}' },
+      }),
+    ],
+  });
+
+  const events = await collect(
+    runFlow(
+      flow,
+      { tok: "abc-123", userId: "u-42" },
+      { continueOnError: false },
+    ),
+  );
+  const completed = events.find((e) => e.type === "RequestCompleted");
+
+  assert.ok(completed, "should have RequestCompleted");
+  assert.equal(
+    completed.requestHeaders?.Authorization,
+    "Bearer abc-123",
+    "resolved Authorization header should have variable substituted",
+  );
+  assert.equal(
+    completed.requestBody?.mode,
+    "raw",
+    "resolved body mode should be raw",
+  );
+  assert.equal(
+    completed.requestBody?.content,
+    '{"id":"u-42"}',
+    "resolved body should have variable substituted",
+  );
+  assert.ok(
+    !completed.requestBody?.content.includes("{{"),
+    `resolved body should not contain unresolved tokens: ${completed.requestBody?.content}`,
+  );
+});
+
 test("variables resolved from supplied map in URL", async () => {
   const flow = makeFlow({
     requests: [makeRequest("echo-var", `${baseUrl}/echo/{{mySegment}}`)],

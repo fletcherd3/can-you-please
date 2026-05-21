@@ -36,42 +36,67 @@ export function buildDetailLines(
   const lines: string[] = [];
 
   // ── request ──────────────────────────────────────────────────────────────
-  lines.push("── request ──────────────────────────────────────────────────────");
+  lines.push(
+    "── request ──────────────────────────────────────────────────────",
+  );
   lines.push(`method:  ${completedEvent?.method ?? requestDef?.method ?? ""}`);
   lines.push(`url:     ${completedEvent?.url ?? requestDef?.url ?? ""}`);
 
-  if (requestDef != null) {
-    const headerEntries = Object.entries(requestDef.headers);
-    if (headerEntries.length > 0) {
-      lines.push("");
-      lines.push("headers:");
-      for (const [k, v] of headerEntries) {
-        lines.push(`  ${k}: ${v}`);
-      }
+  // Prefer resolved headers/body from the completed event (variables
+  // substituted, pre-request script mutations applied) and fall back to the
+  // raw flow definition while the request is still pending.
+  const resolvedHeaders = completedEvent?.requestHeaders;
+  const headerEntries =
+    resolvedHeaders != null
+      ? Object.entries(resolvedHeaders)
+      : requestDef != null
+        ? Object.entries(requestDef.headers)
+        : [];
+  if (headerEntries.length > 0) {
+    lines.push("");
+    lines.push("headers:");
+    for (const [k, v] of headerEntries) {
+      lines.push(`  ${k}: ${v}`);
     }
-    if (requestDef.body != null) {
-      lines.push("");
-      lines.push(`body (${requestDef.body.type}):`);
-      const bodyContent =
-        requestDef.body.type === "json"
-          ? tryPrettyJson(requestDef.body.content)
-          : requestDef.body.content;
-      for (const line of bodyContent.split("\n")) {
-        lines.push(`  ${line}`);
-      }
+  }
+
+  const resolvedBody = completedEvent?.requestBody;
+  if (resolvedBody != null) {
+    lines.push("");
+    lines.push(`body (${resolvedBody.mode}):`);
+    const bodyContent =
+      resolvedBody.mode === "raw"
+        ? tryPrettyJson(resolvedBody.content)
+        : resolvedBody.content;
+    for (const line of bodyContent.split("\n")) {
+      lines.push(`  ${line}`);
+    }
+  } else if (completedEvent == null && requestDef?.body != null) {
+    lines.push("");
+    lines.push(`body (${requestDef.body.type}):`);
+    const bodyContent =
+      requestDef.body.type === "json"
+        ? tryPrettyJson(requestDef.body.content)
+        : requestDef.body.content;
+    for (const line of bodyContent.split("\n")) {
+      lines.push(`  ${line}`);
     }
   }
 
   if (completedEvent === null) {
     lines.push("");
-    lines.push("── response ─────────────────────────────────────────────────────");
+    lines.push(
+      "── response ─────────────────────────────────────────────────────",
+    );
     lines.push("  (pending)");
     return lines;
   }
 
   // ── response ─────────────────────────────────────────────────────────────
   lines.push("");
-  lines.push("── response ─────────────────────────────────────────────────────");
+  lines.push(
+    "── response ─────────────────────────────────────────────────────",
+  );
   lines.push(
     `status:    ${completedEvent.status} ${completedEvent.statusText}`,
   );
@@ -100,7 +125,9 @@ export function buildDetailLines(
   // Console output
   if (completedEvent.consoleOutput.length > 0) {
     lines.push("");
-    lines.push("── console ──────────────────────────────────────────────────────");
+    lines.push(
+      "── console ──────────────────────────────────────────────────────",
+    );
     for (const line of completedEvent.consoleOutput) {
       lines.push(`  ${line}`);
     }
@@ -110,7 +137,9 @@ export function buildDetailLines(
   const varEntries = Object.entries(completedEvent.variablesSet);
   if (varEntries.length > 0) {
     lines.push("");
-    lines.push("── variables set ────────────────────────────────────────────────");
+    lines.push(
+      "── variables set ────────────────────────────────────────────────",
+    );
     for (const [k, v] of varEntries) {
       lines.push(`  ${k} = ${v}`);
     }
@@ -119,7 +148,9 @@ export function buildDetailLines(
   // Failure summary
   if (completedEvent.failed) {
     lines.push("");
-    lines.push("── failure ──────────────────────────────────────────────────────");
+    lines.push(
+      "── failure ──────────────────────────────────────────────────────",
+    );
     if (completedEvent.failureMessage) {
       lines.push(`  ${completedEvent.failureMessage}`);
     }
@@ -161,7 +192,10 @@ export function DetailPane({
   scrollTop,
 }: DetailPaneProps) {
   const lines = buildDetailLines(completedEvent, requestDef);
-  const clamped = Math.max(0, Math.min(scrollTop, Math.max(0, lines.length - height)));
+  const clamped = Math.max(
+    0,
+    Math.min(scrollTop, Math.max(0, lines.length - height)),
+  );
   const visible = lines.slice(clamped, clamped + height);
 
   return (
