@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useApp, useInput } from "ink";
 import { readConfig } from "./config.js";
 import { loadWorkspace, isValidWorkspace } from "./workspace/index.js";
+import { detectVariables } from "./variables/index.js";
 import type { AnyFlow, Environment, Workspace } from "./domain.js";
 import { SetupWizardScreen } from "./ui/screens/SetupWizardScreen.js";
 import { FlowPickerScreen } from "./ui/screens/FlowPickerScreen.js";
@@ -17,7 +18,12 @@ import { HelpOverlay } from "./ui/screens/HelpOverlay.js";
 export type ScreenState =
   | { screen: "setup-wizard"; brokenPath?: string }
   | { screen: "flow-picker"; workspace: Workspace }
-  | { screen: "env-picker"; workspace: Workspace; flow: AnyFlow }
+  | {
+      screen: "env-picker";
+      workspace: Workspace;
+      flow: AnyFlow;
+      activeEnvId: string | null;
+    }
   | {
       screen: "variables-form";
       workspace: Workspace;
@@ -134,8 +140,40 @@ export function App() {
     return (
       <FlowPickerScreen
         workspace={workspace}
-        onSelect={(flow) => {
-          setScreenState({ screen: "env-picker", workspace, flow });
+        onSelect={(flow, activeEnvId) => {
+          // Skip env-picker when flow declares exactly one environment.
+          if (flow.kind === "flow" && flow.environments.length === 1) {
+            const singleEnv = workspace.environments.find((e) =>
+              flow.environments.includes(e.id),
+            );
+            if (singleEnv != null) {
+              const vars = detectVariables(flow);
+              if (vars.length === 0) {
+                setScreenState({
+                  screen: "run-view",
+                  workspace,
+                  flow,
+                  env: singleEnv,
+                  variables: {},
+                  continueOnError: flow.continueOnError,
+                });
+              } else {
+                setScreenState({
+                  screen: "variables-form",
+                  workspace,
+                  flow,
+                  env: singleEnv,
+                });
+              }
+              return;
+            }
+          }
+          setScreenState({
+            screen: "env-picker",
+            workspace,
+            flow,
+            activeEnvId,
+          });
         }}
         onReload={(newWorkspace) => {
           setScreenState({ screen: "flow-picker", workspace: newWorkspace });
@@ -149,12 +187,28 @@ export function App() {
   }
 
   if (screenState.screen === "env-picker") {
-    const { workspace, flow } = screenState;
+    const { workspace, flow, activeEnvId } = screenState;
     return (
       <EnvPickerScreen
         flow={flow}
         environments={workspace.environments}
+        initialEnvId={activeEnvId}
         onSelect={(env) => {
+          // Skip variables-form when flow references zero variables.
+          if (flow.kind === "flow") {
+            const vars = detectVariables(flow);
+            if (vars.length === 0) {
+              setScreenState({
+                screen: "run-view",
+                workspace,
+                flow,
+                env,
+                variables: {},
+                continueOnError: flow.continueOnError,
+              });
+              return;
+            }
+          }
           setScreenState({
             screen: "variables-form",
             workspace,
@@ -187,7 +241,12 @@ export function App() {
           });
         }}
         onBack={() => {
-          setScreenState({ screen: "env-picker", workspace, flow });
+          setScreenState({
+            screen: "env-picker",
+            workspace,
+            flow,
+            activeEnvId: null,
+          });
         }}
         onHelp={() => setShowHelp(true)}
       />

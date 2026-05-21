@@ -31,6 +31,8 @@ export interface FilterableListProps {
   onEsc?: () => void;
   /** Whether this component responds to keyboard input. */
   isActive?: boolean;
+  /** Index to position the cursor at on first render (defaults to 0). */
+  initialIndex?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,8 +72,9 @@ export function FilterableList({
   onSelectNonSelectable,
   onEsc,
   isActive = true,
+  initialIndex,
 }: FilterableListProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(initialIndex ?? 0);
 
   const clampedIndex =
     items.length === 0 ? 0 : Math.min(selectedIndex, items.length - 1);

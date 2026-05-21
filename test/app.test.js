@@ -90,8 +90,8 @@ test("EnvPickerScreen renders stub text", async () => {
     }),
   );
   assert.ok(
-    lastFrame().includes("env picker"),
-    `expected "env picker" in: ${lastFrame()}`,
+    lastFrame().includes("select environment"),
+    `expected "select environment" in: ${lastFrame()}`,
   );
   unmount();
 });

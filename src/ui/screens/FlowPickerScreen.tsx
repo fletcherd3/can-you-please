@@ -15,7 +15,8 @@ import {
 
 export interface FlowPickerScreenProps {
   workspace: Workspace;
-  onSelect: (flow: AnyFlow) => void;
+  /** Called with the selected flow and the currently-active env filter id (or null). */
+  onSelect: (flow: AnyFlow, activeEnvId: string | null) => void;
   onReload: (workspace: Workspace) => void;
   onQuit: () => void;
   onHelp: () => void;
@@ -393,7 +394,7 @@ export function FlowPickerScreen({
           items={items}
           onSelect={(key) => {
             const flow = workspace.flows.find((f) => f.folderPath === key);
-            if (flow) onSelect(flow);
+            if (flow) onSelect(flow, envFilter);
           }}
           onSelectNonSelectable={(key) => {
             const flow = workspace.flows.find((f) => f.folderPath === key);
