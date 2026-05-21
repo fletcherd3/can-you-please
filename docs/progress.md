@@ -56,6 +56,32 @@ _commit e925998_
 - 25 new tests covering token scanning, metadata annotation, precedence,
   required-but-missing, `~`/`$` characters; all 43 tests pass; lint clean
 
+### 0004 — newman runner
+_commit 37a8deb_
+
+- `runFlow(flow, variables, options)` in `src/runner/index.ts` returns
+  `AsyncIterable<RunEvent>`
+- builds Postman v2.1 collection from `Flow` requests (method, url,
+  headers, body, scripts ordered by `order`)
+- emits `RequestStarted` (on `beforeRequest`), `RequestCompleted`
+  (on `item` — after all scripts run), `RunFinished` (on `done`)
+- console output from pre/post scripts buffered per item and included
+  in `RequestCompleted.consoleOutput`
+- `pm.variables.set()` captured from `script` events; included in
+  `RequestCompleted.variablesSet`; chains to subsequent requests
+- non-2xx status synthesised as `failed: true`; JSON body parsed for
+  `error`, `message`, `details` fields into `parsedResponseError`
+- `continueOnError` maps to Newman `bail` option (inverse)
+- breaking the async iterable calls `internalRun.abort()` cleanly
+- pre-run JSON body validation: invalid body emits `RunFinished` with
+  `preRunError` instead of starting Newman
+- minimal ambient type declaration for `newman` in `src/newman.d.ts`
+- `newman` added as runtime dependency
+- 11 e2e tests against a local `node:http` server covering: success,
+  non-2xx JSON and text errors, continueOnError, abort, variable
+  capture, variable chaining, console capture, URL resolution,
+  pre-run error; all 54 tests pass; lint clean
+
 ## next up
 
-0004 — newman runner
+0005 — run logger
