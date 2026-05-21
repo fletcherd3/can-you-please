@@ -1,0 +1,28 @@
+{
+  "name": "can-you-please",
+  "version": "0.0.1",
+  "description": "a TUI for running multi-step API flows against named environments",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "can-you-please": "dist/bin.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test",
+    "lint": "eslint . && prettier --check ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.5.0"
+  }
+}
