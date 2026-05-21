@@ -26,6 +26,7 @@
     "typescript": "^5.5.0"
   },
   "dependencies": {
+    "newman": "^6.2.2",
     "yaml": "^2.9.0"
   }
 }
