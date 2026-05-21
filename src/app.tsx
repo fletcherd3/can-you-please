@@ -230,6 +230,7 @@ export function App() {
       <VariablesFormScreen
         flow={flow}
         env={env}
+        globals={workspace.globals}
         onSubmit={(variables, continueOnError) => {
           setScreenState({
             screen: "run-view",
