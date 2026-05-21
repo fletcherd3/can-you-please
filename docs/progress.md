@@ -125,6 +125,26 @@ _commit db112a6_
   key → null, round-trip, dir creation, unknown-key preservation,
   overwrite, concurrent writes; all 81 tests pass; lint clean
 
+### 0007 — app shell and screen state machine
+_commit 292ec2d_
+
+- added `ink`, `react`, `@types/react`, `ink-testing-library` deps
+- updated `tsconfig.json` with `jsx: react-jsx`
+- `src/app.tsx`: `ScreenState` discriminated union
+  (`setup-wizard`, `flow-picker`, `env-picker`,
+  `variables-form`, `run-view`); startup routing via
+  `readConfig()` / `loadWorkspace()` / `isValidWorkspace()`;
+  global SIGINT handler; global `?` key opens help overlay
+- stub screen components: `SetupWizardScreen`,
+  `FlowPickerScreen`, `EnvPickerScreen`,
+  `VariablesFormScreen`, `RunViewScreen`, `HelpOverlay`
+  (each renders labelled stub text)
+- `src/bin.ts` updated to launch Ink `<App>` after node
+  >=22 guard (guard fires synchronously before dynamic import)
+- 13 new tests (ink-testing-library): stub rendering + `q`,
+  `esc`, `?` keyboard interactions; 94 total tests pass
+- lint clean
+
 ## next up
 
-0007 — app shell and screen state machine
+0008 — setup wizard screen
