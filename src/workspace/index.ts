@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, basename } from "node:path";
 import { parse as parseYaml } from "yaml";
+import { isValidJsonBody } from "./json-body.js";
 import type {
   AnyFlow,
   BrokenFlow,
@@ -138,14 +139,10 @@ function parseRequest(raw: unknown, filePath: string): Request {
       throw new Error(`unsupported body type "${type}"`);
     }
     const content = String(b["content"] ?? "");
-    if (type === "json") {
-      try {
-        JSON.parse(content);
-      } catch {
-        throw new Error(
-          `invalid JSON body in ${basename(filePath)}: not valid JSON`,
-        );
-      }
+    if (type === "json" && !isValidJsonBody(content)) {
+      throw new Error(
+        `invalid JSON body in ${basename(filePath)}: not valid JSON`,
+      );
     }
     body = { type, content };
   }
