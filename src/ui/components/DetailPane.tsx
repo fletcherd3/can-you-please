@@ -39,31 +39,41 @@ export function buildDetailLines(
 
   const lines: string[] = [];
 
+  const requestSource =
+    completedEvent?.sentRequest != null
+      ? "sent"
+      : completedEvent?.resolvedRequest != null || startedEvent?.resolvedRequest != null
+        ? "resolved"
+        : "definition";
+
+  const requestSnapshot =
+    completedEvent?.sentRequest ??
+    completedEvent?.resolvedRequest ??
+    startedEvent?.resolvedRequest ??
+    (requestDef != null
+      ? {
+          method: requestDef.method,
+          url: requestDef.url,
+          headers: requestDef.headers,
+          body:
+            requestDef.body != null
+              ? {
+                  mode: requestDef.body.type,
+                  content: requestDef.body.content,
+                }
+              : undefined,
+        }
+      : null);
+
   // ── request ──────────────────────────────────────────────────────────────
   lines.push(
     "── request ──────────────────────────────────────────────────────",
   );
-  lines.push(
-    `method:  ${completedEvent?.method ?? startedEvent?.method ?? requestDef?.method ?? ""}`,
-  );
-  lines.push(
-    `url:     ${completedEvent?.url ?? startedEvent?.url ?? requestDef?.url ?? ""}`,
-  );
+  lines.push(`source:  ${requestSource}`);
+  lines.push(`method:  ${requestSnapshot?.method ?? ""}`);
+  lines.push(`url:     ${requestSnapshot?.url ?? ""}`);
 
-  // Prefer resolved headers/body from the completed event, then the started
-  // event (variables substituted, pre-request script mutations applied), and
-  // fall back to the raw flow definition only when nothing resolved is
-  // available yet (i.e., request hasn't even started).
-  const resolvedHeaders =
-    completedEvent?.sentRequest?.headers ??
-    completedEvent?.resolvedRequest?.headers ??
-    startedEvent?.resolvedRequest?.headers;
-  const headerEntries =
-    resolvedHeaders != null
-      ? Object.entries(resolvedHeaders)
-      : requestDef != null
-        ? Object.entries(requestDef.headers)
-        : [];
+  const headerEntries = Object.entries(requestSnapshot?.headers ?? {});
   if (headerEntries.length > 0) {
     lines.push("");
     lines.push("headers:");
@@ -72,31 +82,13 @@ export function buildDetailLines(
     }
   }
 
-  const resolvedBody =
-    completedEvent?.sentRequest?.body ??
-    completedEvent?.resolvedRequest?.body ??
-    startedEvent?.resolvedRequest?.body;
-  if (resolvedBody != null) {
+  if (requestSnapshot?.body != null) {
     lines.push("");
-    lines.push(`body (${resolvedBody.mode}):`);
+    lines.push(`body (${requestSnapshot.body.mode}):`);
     const bodyContent =
-      resolvedBody.mode === "raw"
-        ? tryPrettyJson(resolvedBody.content)
-        : resolvedBody.content;
-    for (const line of bodyContent.split("\n")) {
-      lines.push(`  ${line}`);
-    }
-  } else if (
-    completedEvent == null &&
-    startedEvent == null &&
-    requestDef?.body != null
-  ) {
-    lines.push("");
-    lines.push(`body (${requestDef.body.type}):`);
-    const bodyContent =
-      requestDef.body.type === "json"
-        ? tryPrettyJson(requestDef.body.content)
-        : requestDef.body.content;
+      requestSnapshot.body.mode === "raw"
+        ? tryPrettyJson(requestSnapshot.body.content)
+        : requestSnapshot.body.content;
     for (const line of bodyContent.split("\n")) {
       lines.push(`  ${line}`);
     }

@@ -649,6 +649,10 @@ test("buildDetailLines: pending (no completed event)", () => {
     `expected "(pending)" in lines: ${lines.join("\n")}`,
   );
   assert.ok(
+    lines.some((l) => l.includes("source:  definition")),
+    `expected definition source in lines: ${lines.join("\n")}`,
+  );
+  assert.ok(
     lines.some((l) => l.includes("POST")),
     `expected method in lines`,
   );
@@ -665,6 +669,11 @@ test("buildDetailLines: shows method, url, status", () => {
     responseTimeMs: 42,
     headers: { "x-req-id": "abc" },
     body: '{"id":"u1"}',
+    resolvedRequest: {
+      method: "POST",
+      url: "https://api.dev/users",
+      headers: {},
+    },
     failed: false,
     consoleOutput: [],
     variablesSet: {},
@@ -787,6 +796,16 @@ test("buildDetailLines: shows request headers from requestDef", () => {
   );
 });
 
+test("buildDetailLines: omits empty request headers and body", () => {
+  const req = makeRequest({ headers: {}, body: undefined });
+  const lines = buildDetailLines(null, req);
+  assert.ok(!lines.includes("headers:"), `unexpected headers section: ${lines.join("\n")}`);
+  assert.ok(
+    !lines.some((l) => l.startsWith("body (")),
+    `unexpected body section: ${lines.join("\n")}`,
+  );
+});
+
 test("buildDetailLines: returns placeholder when both args null", () => {
   const lines = buildDetailLines(null, null);
   assert.ok(
@@ -817,6 +836,10 @@ test("buildDetailLines: startedEvent resolved data shown while pending", () => {
     },
   };
   const lines = buildDetailLines(null, req, startedEvent);
+  assert.ok(
+    lines.some((l) => l.includes("source:  resolved")),
+    `expected resolved source: ${lines.join("\n")}`,
+  );
   // Should use resolved URL from startedEvent, not raw requestDef
   assert.ok(
     lines.some((l) => l.includes("https://api.dev/sand/users")),
@@ -882,11 +905,82 @@ test("buildDetailLines: completedEvent takes precedence over startedEvent", () =
   };
   const lines = buildDetailLines(completedEvent, null, startedEvent);
   assert.ok(
+    lines.some((l) => l.includes("source:  resolved")),
+    `expected resolved source: ${lines.join("\n")}`,
+  );
+  assert.ok(
     lines.some((l) => l.includes("Bearer completed")),
     `completedEvent header should win: ${lines.join("\n")}`,
   );
   assert.ok(
     !lines.some((l) => l.includes("Bearer started")),
     `startedEvent header should not appear: ${lines.join("\n")}`,
+  );
+});
+
+test("buildDetailLines: completed sentRequest retrospectively replaces resolved data", () => {
+  const req = makeRequest({
+    url: "https://api.dev/{{env}}/users",
+    headers: { Authorization: "Bearer {{tok}}" },
+    body: { type: "json", content: '{"from":"definition"}' },
+  });
+  const startedEvent = {
+    type: "RequestStarted",
+    name: "create-user",
+    method: "POST",
+    url: "https://api.dev/sand/users",
+    resolvedRequest: {
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      headers: { Authorization: "Bearer resolved" },
+      body: { mode: "raw", content: '{"from":"resolved"}' },
+    },
+  };
+  const completedEvent = {
+    type: "RequestCompleted",
+    name: "create-user",
+    method: "POST",
+    url: "https://api.dev/sand/users",
+    status: 200,
+    statusText: "OK",
+    responseTimeMs: 42,
+    headers: {},
+    body: '{"ok":true}',
+    resolvedRequest: {
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      headers: { Authorization: "Bearer resolved" },
+      body: { mode: "raw", content: '{"from":"resolved"}' },
+    },
+    sentRequest: {
+      method: "POST",
+      url: "https://api.dev/sent/users",
+      headers: { Authorization: "Bearer sent" },
+      body: { mode: "raw", content: '{"from":"sent"}' },
+    },
+    failed: false,
+    consoleOutput: [],
+    variablesSet: {},
+  };
+  const lines = buildDetailLines(completedEvent, req, startedEvent);
+  assert.ok(
+    lines.some((l) => l.includes("source:  sent")),
+    `expected sent source: ${lines.join("\n")}`,
+  );
+  assert.ok(
+    lines.some((l) => l.includes("https://api.dev/sent/users")),
+    `expected sent url: ${lines.join("\n")}`,
+  );
+  assert.ok(
+    lines.some((l) => l.includes("Bearer sent")),
+    `expected sent header: ${lines.join("\n")}`,
+  );
+  assert.ok(
+    lines.some((l) => l.includes('"from": "sent"')),
+    `expected sent body: ${lines.join("\n")}`,
+  );
+  assert.ok(
+    !lines.some((l) => l.includes("Bearer resolved")),
+    `resolved header should be replaced: ${lines.join("\n")}`,
   );
 });
