@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
 import type { Request } from "../../domain.js";
+import { selectRequestProvenance } from "../../request-provenance.js";
 import type {
   RequestCompletedEvent,
   RequestStartedEvent,
@@ -39,31 +40,8 @@ export function buildDetailLines(
 
   const lines: string[] = [];
 
-  const requestSource =
-    completedEvent?.sentRequest != null
-      ? "sent"
-      : completedEvent?.resolvedRequest != null || startedEvent?.resolvedRequest != null
-        ? "resolved"
-        : "definition";
-
-  const requestSnapshot =
-    completedEvent?.sentRequest ??
-    completedEvent?.resolvedRequest ??
-    startedEvent?.resolvedRequest ??
-    (requestDef != null
-      ? {
-          method: requestDef.method,
-          url: requestDef.url,
-          headers: requestDef.headers,
-          body:
-            requestDef.body != null
-              ? {
-                  mode: requestDef.body.type,
-                  content: requestDef.body.content,
-                }
-              : undefined,
-        }
-      : null);
+  const { source: requestSource, snapshot: requestSnapshot } =
+    selectRequestProvenance(completedEvent, requestDef, startedEvent);
 
   // ── request ──────────────────────────────────────────────────────────────
   lines.push(

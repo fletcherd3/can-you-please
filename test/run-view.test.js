@@ -8,6 +8,7 @@ import React from "react";
 import { render } from "ink-testing-library";
 
 import { RunViewScreen } from "../dist/ui/screens/RunViewScreen.js";
+import { selectRequestProvenance } from "../dist/request-provenance.js";
 import { buildDetailLines } from "../dist/ui/components/DetailPane.js";
 
 // ---------------------------------------------------------------------------
@@ -640,6 +641,94 @@ test("? key calls onHelp", async () => {
 // ---------------------------------------------------------------------------
 // DetailPane unit tests (buildDetailLines)
 // ---------------------------------------------------------------------------
+
+test("selectRequestProvenance: falls back to definition snapshot", () => {
+  const req = makeRequest({
+    url: "https://api.dev/{{env}}/users",
+    headers: { Authorization: "Bearer {{tok}}" },
+    body: { type: "json", content: '{"from":"definition"}' },
+  });
+
+  const selection = selectRequestProvenance(null, req, null);
+
+  assert.equal(selection.source, "definition");
+  assert.equal(selection.snapshot?.url, "https://api.dev/{{env}}/users");
+  assert.equal(selection.snapshot?.headers.Authorization, "Bearer {{tok}}");
+  assert.equal(selection.snapshot?.body?.content, '{"from":"definition"}');
+});
+
+test("selectRequestProvenance: prefers resolved snapshot before send", () => {
+  const req = makeRequest({
+    url: "https://api.dev/{{env}}/users",
+    headers: { Authorization: "Bearer {{tok}}" },
+  });
+  const startedEvent = {
+    type: "RequestStarted",
+    name: "create-user",
+    method: "POST",
+    url: "https://api.dev/sand/users",
+    resolvedRequest: {
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      headers: { Authorization: "Bearer resolved" },
+      body: { mode: "raw", content: '{"from":"resolved"}' },
+    },
+  };
+
+  const selection = selectRequestProvenance(null, req, startedEvent);
+
+  assert.equal(selection.source, "resolved");
+  assert.equal(selection.snapshot?.url, "https://api.dev/sand/users");
+  assert.equal(selection.snapshot?.headers.Authorization, "Bearer resolved");
+  assert.equal(selection.snapshot?.body?.content, '{"from":"resolved"}');
+});
+
+test("selectRequestProvenance: prefers sent snapshot over resolved snapshot", () => {
+  const req = makeRequest({
+    url: "https://api.dev/{{env}}/users",
+    headers: { Authorization: "Bearer {{tok}}" },
+  });
+  const startedEvent = {
+    type: "RequestStarted",
+    name: "create-user",
+    method: "POST",
+    url: "https://api.dev/sand/users",
+    resolvedRequest: {
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      headers: { Authorization: "Bearer resolved" },
+      body: { mode: "raw", content: '{"from":"resolved"}' },
+    },
+  };
+  const completedEvent = {
+    type: "RequestCompleted",
+    name: "create-user",
+    method: "POST",
+    url: "https://api.dev/sand/users",
+    status: 200,
+    statusText: "OK",
+    responseTimeMs: 42,
+    headers: {},
+    body: '{"ok":true}',
+    resolvedRequest: startedEvent.resolvedRequest,
+    sentRequest: {
+      method: "POST",
+      url: "https://api.dev/sent/users",
+      headers: { Authorization: "Bearer sent" },
+      body: { mode: "raw", content: '{"from":"sent"}' },
+    },
+    failed: false,
+    consoleOutput: [],
+    variablesSet: {},
+  };
+
+  const selection = selectRequestProvenance(completedEvent, req, startedEvent);
+
+  assert.equal(selection.source, "sent");
+  assert.equal(selection.snapshot?.url, "https://api.dev/sent/users");
+  assert.equal(selection.snapshot?.headers.Authorization, "Bearer sent");
+  assert.equal(selection.snapshot?.body?.content, '{"from":"sent"}');
+});
 
 test("buildDetailLines: pending (no completed event)", () => {
   const req = makeRequest();

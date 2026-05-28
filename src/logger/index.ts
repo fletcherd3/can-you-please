@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Flow, Request } from "../domain.js";
+import { selectRequestProvenance } from "../request-provenance.js";
 import type {
   RunEvent,
   RequestCompletedEvent,
@@ -94,31 +95,8 @@ function buildSection(
 ): string {
   const lines: string[] = [];
 
-  const requestSource =
-    completed.sentRequest != null
-      ? "sent"
-      : completed.resolvedRequest != null || started.resolvedRequest != null
-        ? "resolved"
-        : "definition";
-
-  const requestSnapshot =
-    completed.sentRequest ??
-    completed.resolvedRequest ??
-    started.resolvedRequest ??
-    (requestDef != null
-      ? {
-          method: requestDef.method,
-          url: requestDef.url,
-          headers: requestDef.headers,
-          body:
-            requestDef.body != null
-              ? {
-                  mode: requestDef.body.type,
-                  content: requestDef.body.content,
-                }
-              : undefined,
-        }
-      : null);
+  const { source: requestSource, snapshot: requestSnapshot } =
+    selectRequestProvenance(completed, requestDef ?? null, started);
 
   // Delimiter / section header
   lines.push(
