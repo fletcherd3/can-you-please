@@ -55,7 +55,9 @@ export function buildDetailLines(
   // fall back to the raw flow definition only when nothing resolved is
   // available yet (i.e., request hasn't even started).
   const resolvedHeaders =
-    completedEvent?.requestHeaders ?? startedEvent?.requestHeaders;
+    completedEvent?.sentRequest?.headers ??
+    completedEvent?.resolvedRequest?.headers ??
+    startedEvent?.resolvedRequest?.headers;
   const headerEntries =
     resolvedHeaders != null
       ? Object.entries(resolvedHeaders)
@@ -71,7 +73,9 @@ export function buildDetailLines(
   }
 
   const resolvedBody =
-    completedEvent?.requestBody ?? startedEvent?.requestBody;
+    completedEvent?.sentRequest?.body ??
+    completedEvent?.resolvedRequest?.body ??
+    startedEvent?.resolvedRequest?.body;
   if (resolvedBody != null) {
     lines.push("");
     lines.push(`body (${resolvedBody.mode}):`);

@@ -6,16 +6,26 @@ import { isValidJsonBody } from "../workspace/json-body.js";
 // Public types
 // ---------------------------------------------------------------------------
 
+export interface RequestBodySnapshot {
+  mode: string;
+  content: string;
+}
+
+export interface RequestSnapshot {
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+  body?: RequestBodySnapshot;
+}
+
 export interface RequestStartedEvent {
   type: "RequestStarted";
   name: string;
   method: string;
   /** Resolved URL — variables already substituted by Newman */
   url: string;
-  /** Resolved request headers as actually sent (variables substituted) */
-  requestHeaders: Record<string, string>;
-  /** Resolved request body as actually sent (variables substituted) */
-  requestBody?: { mode: string; content: string };
+  /** Request snapshot captured before send, after variable resolution. */
+  resolvedRequest: RequestSnapshot;
 }
 
 export interface ParsedResponseError {
@@ -34,10 +44,10 @@ export interface RequestCompletedEvent {
   responseTimeMs: number;
   headers: Record<string, string>;
   body: string;
-  /** Resolved request headers as actually sent (variables substituted) */
-  requestHeaders: Record<string, string>;
-  /** Resolved request body as actually sent (variables substituted) */
-  requestBody?: { mode: string; content: string };
+  /** Request snapshot captured before send, after variable resolution. */
+  resolvedRequest?: RequestSnapshot;
+  /** Canonical request snapshot captured from Newman's actual sent request. */
+  sentRequest?: RequestSnapshot;
   /** true for any non-2xx status */
   failed: boolean;
   failureMessage?: string;
@@ -205,7 +215,7 @@ function headersFromRequest(
  */
 function bodyFromRequest(
   request: AnyObj | undefined,
-): { mode: string; content: string } | undefined {
+): RequestBodySnapshot | undefined {
   const body = request?.["body"] as AnyObj | undefined;
   if (body == null) return undefined;
   const mode = String(body["mode"] ?? "raw");
@@ -224,6 +234,17 @@ function bodyFromRequest(
     // ignore
   }
   return undefined;
+}
+
+function snapshotFromRequest(
+  request: AnyObj | undefined,
+): RequestSnapshot {
+  return {
+    method: String(request?.["method"] ?? ""),
+    url: String(request?.["url"] ?? ""),
+    headers: headersFromRequest(request),
+    body: bodyFromRequest(request),
+  };
 }
 
 function parsedErrorFromBody(body: string): ParsedResponseError | undefined {
@@ -282,9 +303,8 @@ export function runFlow(
         RequestStartedEvent,
         "name" | "method" | "url"
       > | null = null;
-      let pendingResolvedHeaders: Record<string, string> = {};
-      let pendingResolvedBody: { mode: string; content: string } | undefined =
-        undefined;
+      let pendingResolvedRequest: RequestSnapshot | null = null;
+      let pendingSentRequest: RequestSnapshot | null = null;
       let pendingResponseMeta: Omit<
         RequestCompletedEvent,
         | "type"
@@ -293,8 +313,8 @@ export function runFlow(
         | "url"
         | "consoleOutput"
         | "variablesSet"
-        | "requestHeaders"
-        | "requestBody"
+        | "resolvedRequest"
+        | "sentRequest"
       > | null = null;
 
       function push(event: RunEvent): void {
@@ -358,8 +378,8 @@ export function runFlow(
           consoleBuffer = [];
           varsSetBuffer = {};
           pendingRequestMeta = null;
-          pendingResolvedHeaders = {};
-          pendingResolvedBody = undefined;
+          pendingResolvedRequest = null;
+          pendingSentRequest = null;
           pendingResponseMeta = null;
         });
 
@@ -379,26 +399,27 @@ export function runFlow(
 
         emitter.on("beforeRequest", (_err: unknown, args: AnyObj) => {
           const request = args["request"] as AnyObj | undefined;
+          pendingResolvedRequest = snapshotFromRequest(request);
           pendingRequestMeta = {
             name: String(args["item"]?.["name"] ?? ""),
-            method: String(request?.["method"] ?? ""),
-            url: String(request?.["url"] ?? ""),
+            method: pendingResolvedRequest.method,
+            url: pendingResolvedRequest.url,
           };
-          // Capture resolved headers / body — these reflect what was actually
-          // sent over the wire (variables substituted, pre-request script
-          // mutations applied).
-          pendingResolvedHeaders = headersFromRequest(request);
-          pendingResolvedBody = bodyFromRequest(request);
           push({
             type: "RequestStarted",
             ...pendingRequestMeta,
-            requestHeaders: { ...pendingResolvedHeaders },
-            requestBody: pendingResolvedBody,
+            resolvedRequest: {
+              ...pendingResolvedRequest,
+              headers: { ...pendingResolvedRequest.headers },
+            },
           });
         });
 
         emitter.on("request", (_err: unknown, args: AnyObj) => {
           const resp = args["response"] as AnyObj | null;
+          pendingSentRequest = snapshotFromRequest(
+            args["request"] as AnyObj | undefined,
+          );
           const code: number = resp?.["code"] ?? 0;
           const failed = code < 200 || code >= 300;
 
@@ -443,8 +464,20 @@ export function runFlow(
             responseTimeMs: pendingResponseMeta?.responseTimeMs ?? 0,
             headers: pendingResponseMeta?.headers ?? {},
             body: pendingResponseMeta?.body ?? "",
-            requestHeaders: { ...pendingResolvedHeaders },
-            requestBody: pendingResolvedBody,
+            resolvedRequest:
+              pendingResolvedRequest != null
+                ? {
+                    ...pendingResolvedRequest,
+                    headers: { ...pendingResolvedRequest.headers },
+                  }
+                : undefined,
+            sentRequest:
+              pendingSentRequest != null
+                ? {
+                    ...pendingSentRequest,
+                    headers: { ...pendingSentRequest.headers },
+                  }
+                : undefined,
             failed: pendingResponseMeta?.failed ?? false,
             failureMessage: pendingResponseMeta?.failureMessage,
             consoleOutput: [...consoleBuffer],

@@ -309,10 +309,10 @@ test("console output captured in consoleOutput", async () => {
   );
 });
 
-test("resolved request headers + body captured on RequestCompleted", async () => {
-  // Lock in the contract that Newman's beforeRequest event provides headers
-  // and body with {{variables}} already substituted, and that our runner
-  // surfaces them on the completed event for the detail pane / logger to use.
+test("resolved and sent request snapshots captured on RequestCompleted", async () => {
+  // Lock in the contract that Newman's beforeRequest event provides a
+  // resolved snapshot, and that the later request lifecycle exposes the
+  // actual sent request for downstream provenance-aware renderers.
   const flow = makeFlow({
     requests: [
       makeRequest("resolved-req", `${baseUrl}/ok`, {
@@ -334,23 +334,33 @@ test("resolved request headers + body captured on RequestCompleted", async () =>
 
   assert.ok(completed, "should have RequestCompleted");
   assert.equal(
-    completed.requestHeaders?.Authorization,
+    completed.resolvedRequest?.headers?.Authorization,
     "Bearer abc-123",
     "resolved Authorization header should have variable substituted",
   );
   assert.equal(
-    completed.requestBody?.mode,
+    completed.resolvedRequest?.body?.mode,
     "raw",
     "resolved body mode should be raw",
   );
   assert.equal(
-    completed.requestBody?.content,
+    completed.resolvedRequest?.body?.content,
     '{"id":"u-42"}',
     "resolved body should have variable substituted",
   );
   assert.ok(
-    !completed.requestBody?.content.includes("{{"),
-    `resolved body should not contain unresolved tokens: ${completed.requestBody?.content}`,
+    !completed.resolvedRequest?.body?.content.includes("{{"),
+    `resolved body should not contain unresolved tokens: ${completed.resolvedRequest?.body?.content}`,
+  );
+  assert.equal(
+    completed.sentRequest?.headers?.Authorization,
+    "Bearer abc-123",
+    "sent request should retain resolved Authorization header",
+  );
+  assert.equal(
+    completed.sentRequest?.body?.content,
+    '{"id":"u-42"}',
+    "sent request should retain resolved body",
   );
 });
 
@@ -392,7 +402,7 @@ test("pre-run error: invalid JSON body emits RunFinished with preRunError", asyn
   assert.equal(finished.totalRequests, 0);
 });
 
-test("RequestStarted carries resolved headers and body", async () => {
+test("RequestStarted carries a resolved request snapshot", async () => {
   const flow = makeFlow({
     requests: [
       makeRequest("started-resolved", `${baseUrl}/ok`, {
@@ -414,12 +424,12 @@ test("RequestStarted carries resolved headers and body", async () => {
 
   assert.ok(started, "should have RequestStarted");
   assert.equal(
-    started.requestHeaders?.Authorization,
+    started.resolvedRequest?.headers?.Authorization,
     "Bearer secret",
     "started event should have resolved Authorization header",
   );
   assert.equal(
-    started.requestBody?.content,
+    started.resolvedRequest?.body?.content,
     '{"id":"u-99"}',
     "started event should have resolved body",
   );
@@ -461,13 +471,13 @@ test("globals option: pm.globals.get() reads from globals map", async () => {
   const completed = events.find((e) => e.type === "RequestCompleted");
   assert.ok(completed, "should have RequestCompleted");
   assert.equal(
-    completed.requestBody?.content,
+    completed.resolvedRequest?.body?.content,
     '{"name":"alice.smith"}',
     "pre-request script should resolve pm.globals.get values",
   );
 });
 
-test("collection assembled with correct method, headers, body", async () => {
+test("sent snapshot captures runtime-added system headers", async () => {
   // Use a raw text body POST to /ok (server returns 200 regardless of body)
   const flow = makeFlow({
     requests: [
@@ -487,4 +497,17 @@ test("collection assembled with correct method, headers, body", async () => {
   assert.equal(started.method, "POST");
   assert.ok(completed);
   assert.equal(completed.status, 200);
+  assert.equal(
+    completed.resolvedRequest?.headers?.["X-Custom"],
+    "header-value",
+  );
+  assert.equal(
+    completed.sentRequest?.headers?.["Content-Type"],
+    "text/plain",
+    "sent snapshot should come from Newman's actual request object",
+  );
+  assert.ok(
+    completed.sentRequest?.headers?.["User-Agent"],
+    "sent snapshot should include runtime-added system headers",
+  );
 });

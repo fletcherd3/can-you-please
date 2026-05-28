@@ -103,19 +103,23 @@ function buildSection(
   lines.push(`url: ${completed.url || started.url}`);
   lines.push(``);
 
-  // Request detail — prefer the resolved headers/body actually sent over
-  // the wire, falling back to the flow definition only if (somehow) the
-  // beforeRequest event didn't populate them.
+  // Request detail — prefer the actual sent snapshot, then the resolved
+  // pre-send snapshot, falling back to the flow definition only if neither
+  // provenance snapshot is available.
   const headersToLog =
-    completed.requestHeaders != null &&
-    Object.keys(completed.requestHeaders).length > 0
-      ? completed.requestHeaders
-      : (requestDef?.headers ?? {});
+    completed.sentRequest?.headers != null &&
+    Object.keys(completed.sentRequest.headers).length > 0
+      ? completed.sentRequest.headers
+      : completed.resolvedRequest?.headers != null &&
+          Object.keys(completed.resolvedRequest.headers).length > 0
+        ? completed.resolvedRequest.headers
+        : (requestDef?.headers ?? {});
   lines.push(`request headers:`);
   lines.push(formatHeaders(headersToLog));
 
   const bodyToLog =
-    completed.requestBody ??
+    completed.sentRequest?.body ??
+    completed.resolvedRequest?.body ??
     (requestDef?.body != null
       ? { mode: requestDef.body.type, content: requestDef.body.content }
       : undefined);

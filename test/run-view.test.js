@@ -108,6 +108,11 @@ function makePassRun(requestName = "create-user") {
       name: requestName,
       method: "POST",
       url: "https://api.dev/users",
+      resolvedRequest: {
+        method: "POST",
+        url: "https://api.dev/users",
+        headers: {},
+      },
     },
     {
       type: "RequestCompleted",
@@ -119,6 +124,11 @@ function makePassRun(requestName = "create-user") {
       responseTimeMs: 42,
       headers: { "content-type": "application/json" },
       body: '{"id":"u1"}',
+      resolvedRequest: {
+        method: "POST",
+        url: "https://api.dev/users",
+        headers: {},
+      },
       failed: false,
       consoleOutput: [],
       variablesSet: {},
@@ -139,6 +149,11 @@ function makeFailRun(requestName = "create-user") {
       name: requestName,
       method: "POST",
       url: "https://api.dev/users",
+      resolvedRequest: {
+        method: "POST",
+        url: "https://api.dev/users",
+        headers: {},
+      },
     },
     {
       type: "RequestCompleted",
@@ -150,6 +165,11 @@ function makeFailRun(requestName = "create-user") {
       responseTimeMs: 123,
       headers: {},
       body: '{"error":"boom"}',
+      resolvedRequest: {
+        method: "POST",
+        url: "https://api.dev/users",
+        headers: {},
+      },
       failed: true,
       failureMessage: "500 Internal Server Error",
       consoleOutput: [],
@@ -786,8 +806,15 @@ test("buildDetailLines: startedEvent resolved data shown while pending", () => {
     name: "create-user",
     method: "POST",
     url: "https://api.dev/sand/users",
-    requestHeaders: { "Content-Type": "application/json", Authorization: "Bearer real-token" },
-    requestBody: { mode: "raw", content: '{"email":"test@zip.co"}' },
+    resolvedRequest: {
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer real-token",
+      },
+      body: { mode: "raw", content: '{"email":"test@zip.co"}' },
+    },
   };
   const lines = buildDetailLines(null, req, startedEvent);
   // Should use resolved URL from startedEvent, not raw requestDef
@@ -826,8 +853,12 @@ test("buildDetailLines: completedEvent takes precedence over startedEvent", () =
     name: "create-user",
     method: "POST",
     url: "https://api.dev/users",
-    requestHeaders: { Authorization: "Bearer started" },
-    requestBody: { mode: "raw", content: '{"from":"started"}' },
+    resolvedRequest: {
+      method: "POST",
+      url: "https://api.dev/users",
+      headers: { Authorization: "Bearer started" },
+      body: { mode: "raw", content: '{"from":"started"}' },
+    },
   };
   const completedEvent = {
     type: "RequestCompleted",
@@ -839,8 +870,12 @@ test("buildDetailLines: completedEvent takes precedence over startedEvent", () =
     responseTimeMs: 42,
     headers: {},
     body: '{"ok":true}',
-    requestHeaders: { Authorization: "Bearer completed" },
-    requestBody: { mode: "raw", content: '{"from":"completed"}' },
+    resolvedRequest: {
+      method: "POST",
+      url: "https://api.dev/users",
+      headers: { Authorization: "Bearer completed" },
+      body: { mode: "raw", content: '{"from":"completed"}' },
+    },
     failed: false,
     consoleOutput: [],
     variablesSet: {},

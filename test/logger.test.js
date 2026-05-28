@@ -54,6 +54,11 @@ function makeStarted(overrides = {}) {
     name: "req-1",
     method: "GET",
     url: "https://example.com",
+    resolvedRequest: {
+      method: "GET",
+      url: "https://example.com",
+      headers: {},
+    },
     ...overrides,
   };
 }
@@ -69,6 +74,11 @@ function makeCompleted(overrides = {}) {
     responseTimeMs: 42,
     headers: {},
     body: "ok",
+    resolvedRequest: {
+      method: "GET",
+      url: "https://example.com",
+      headers: {},
+    },
     failed: false,
     consoleOutput: [],
     variablesSet: {},
