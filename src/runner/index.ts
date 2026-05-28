@@ -12,6 +12,10 @@ export interface RequestStartedEvent {
   method: string;
   /** Resolved URL — variables already substituted by Newman */
   url: string;
+  /** Resolved request headers as actually sent (variables substituted) */
+  requestHeaders: Record<string, string>;
+  /** Resolved request body as actually sent (variables substituted) */
+  requestBody?: { mode: string; content: string };
 }
 
 export interface ParsedResponseError {
@@ -62,6 +66,8 @@ export type RunEvent =
 export interface RunOptions {
   /** When true, the run continues past request failures; false bails on first failure */
   continueOnError: boolean;
+  /** Variables to pass as Newman globals (accessible via pm.globals.get()) */
+  globals?: Record<string, string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +123,20 @@ function buildEnvironment(
   return {
     id: "runner-env",
     name: "runner-env",
+    values: Object.entries(variables).map(([key, value]) => ({
+      key,
+      value,
+      enabled: true,
+    })),
+  };
+}
+
+function buildGlobals(
+  variables: Record<string, string>,
+): Record<string, unknown> {
+  return {
+    id: "runner-globals",
+    name: "runner-globals",
     values: Object.entries(variables).map(([key, value]) => ({
       key,
       value,
@@ -316,9 +336,15 @@ export function runFlow(
         const collection = buildCollection(flow);
         const environment = buildEnvironment(variables);
 
+        const globals =
+          options.globals != null
+            ? buildGlobals(options.globals)
+            : undefined;
+
         const emitter = newmanRun({
           collection,
           environment,
+          ...(globals != null ? { globals } : {}),
           // bail = stop on failure; continueOnError is the inverse
           bail: !options.continueOnError,
           reporters: [],
@@ -366,6 +392,8 @@ export function runFlow(
           push({
             type: "RequestStarted",
             ...pendingRequestMeta,
+            requestHeaders: { ...pendingResolvedHeaders },
+            requestBody: pendingResolvedBody,
           });
         });
 

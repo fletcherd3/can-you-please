@@ -1,7 +1,10 @@
 import React from "react";
 import { Box, Text } from "ink";
 import type { Request } from "../../domain.js";
-import type { RequestCompletedEvent } from "../../runner/index.js";
+import type {
+  RequestCompletedEvent,
+  RequestStartedEvent,
+} from "../../runner/index.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -28,8 +31,9 @@ function tryPrettyJson(s: string): string {
 export function buildDetailLines(
   completedEvent: RequestCompletedEvent | null,
   requestDef: Request | null,
+  startedEvent?: RequestStartedEvent | null,
 ): string[] {
-  if (completedEvent === null && requestDef === null) {
+  if (completedEvent === null && requestDef === null && !startedEvent) {
     return ["(no request selected)"];
   }
 
@@ -39,13 +43,19 @@ export function buildDetailLines(
   lines.push(
     "── request ──────────────────────────────────────────────────────",
   );
-  lines.push(`method:  ${completedEvent?.method ?? requestDef?.method ?? ""}`);
-  lines.push(`url:     ${completedEvent?.url ?? requestDef?.url ?? ""}`);
+  lines.push(
+    `method:  ${completedEvent?.method ?? startedEvent?.method ?? requestDef?.method ?? ""}`,
+  );
+  lines.push(
+    `url:     ${completedEvent?.url ?? startedEvent?.url ?? requestDef?.url ?? ""}`,
+  );
 
-  // Prefer resolved headers/body from the completed event (variables
-  // substituted, pre-request script mutations applied) and fall back to the
-  // raw flow definition while the request is still pending.
-  const resolvedHeaders = completedEvent?.requestHeaders;
+  // Prefer resolved headers/body from the completed event, then the started
+  // event (variables substituted, pre-request script mutations applied), and
+  // fall back to the raw flow definition only when nothing resolved is
+  // available yet (i.e., request hasn't even started).
+  const resolvedHeaders =
+    completedEvent?.requestHeaders ?? startedEvent?.requestHeaders;
   const headerEntries =
     resolvedHeaders != null
       ? Object.entries(resolvedHeaders)
@@ -60,7 +70,8 @@ export function buildDetailLines(
     }
   }
 
-  const resolvedBody = completedEvent?.requestBody;
+  const resolvedBody =
+    completedEvent?.requestBody ?? startedEvent?.requestBody;
   if (resolvedBody != null) {
     lines.push("");
     lines.push(`body (${resolvedBody.mode}):`);
@@ -71,7 +82,11 @@ export function buildDetailLines(
     for (const line of bodyContent.split("\n")) {
       lines.push(`  ${line}`);
     }
-  } else if (completedEvent == null && requestDef?.body != null) {
+  } else if (
+    completedEvent == null &&
+    startedEvent == null &&
+    requestDef?.body != null
+  ) {
     lines.push("");
     lines.push(`body (${requestDef.body.type}):`);
     const bodyContent =
@@ -173,6 +188,8 @@ export function buildDetailLines(
 export interface DetailPaneProps {
   /** Completed event for the selected request. null if not yet completed. */
   completedEvent: RequestCompletedEvent | null;
+  /** Started event for the selected request (resolved request data while pending). */
+  startedEvent?: RequestStartedEvent | null;
   /** Original request definition from the flow (for req headers/body). */
   requestDef: Request | null;
   /** Available height in terminal rows. */
@@ -187,11 +204,12 @@ export interface DetailPaneProps {
 
 export function DetailPane({
   completedEvent,
+  startedEvent,
   requestDef,
   height,
   scrollTop,
 }: DetailPaneProps) {
-  const lines = buildDetailLines(completedEvent, requestDef);
+  const lines = buildDetailLines(completedEvent, requestDef, startedEvent);
   const clamped = Math.max(
     0,
     Math.min(scrollTop, Math.max(0, lines.length - height)),

@@ -392,6 +392,81 @@ test("pre-run error: invalid JSON body emits RunFinished with preRunError", asyn
   assert.equal(finished.totalRequests, 0);
 });
 
+test("RequestStarted carries resolved headers and body", async () => {
+  const flow = makeFlow({
+    requests: [
+      makeRequest("started-resolved", `${baseUrl}/ok`, {
+        method: "POST",
+        headers: { Authorization: "Bearer {{tok}}" },
+        body: { type: "json", content: '{"id":"{{userId}}"}' },
+      }),
+    ],
+  });
+
+  const events = await collect(
+    runFlow(
+      flow,
+      { tok: "secret", userId: "u-99" },
+      { continueOnError: false },
+    ),
+  );
+  const started = events.find((e) => e.type === "RequestStarted");
+
+  assert.ok(started, "should have RequestStarted");
+  assert.equal(
+    started.requestHeaders?.Authorization,
+    "Bearer secret",
+    "started event should have resolved Authorization header",
+  );
+  assert.equal(
+    started.requestBody?.content,
+    '{"id":"u-99"}',
+    "started event should have resolved body",
+  );
+});
+
+test("globals option: pm.globals.get() reads from globals map", async () => {
+  const flow = makeFlow({
+    requests: [
+      makeRequest("globals-test", `${baseUrl}/ok`, {
+        method: "POST",
+        headers: {},
+        body: { type: "json", content: '{"name":"{{computed}}"}' },
+        scripts: [
+          {
+            type: "beforeRequest",
+            language: "text/javascript",
+            code: [
+              "const first = pm.globals.get('first-name');",
+              "const last = pm.globals.get('last-name');",
+              "pm.variables.set('computed', `${first}.${last}`);",
+            ].join("\n"),
+          },
+        ],
+      }),
+    ],
+  });
+
+  const events = await collect(
+    runFlow(
+      flow,
+      {},
+      {
+        continueOnError: false,
+        globals: { "first-name": "alice", "last-name": "smith" },
+      },
+    ),
+  );
+
+  const completed = events.find((e) => e.type === "RequestCompleted");
+  assert.ok(completed, "should have RequestCompleted");
+  assert.equal(
+    completed.requestBody?.content,
+    '{"name":"alice.smith"}',
+    "pre-request script should resolve pm.globals.get values",
+  );
+});
+
 test("collection assembled with correct method, headers, body", async () => {
   // Use a raw text body POST to /ok (server returns 200 regardless of body)
   const flow = makeFlow({

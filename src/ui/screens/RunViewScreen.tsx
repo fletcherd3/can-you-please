@@ -18,6 +18,7 @@ import type {
   RunEvent,
   RunOptions,
   RequestCompletedEvent,
+  RequestStartedEvent,
 } from "../../runner/index.js";
 
 // ---------------------------------------------------------------------------
@@ -43,6 +44,7 @@ interface RequestRow {
   statusText?: string;
   durationMs?: number;
   completedEvent?: RequestCompletedEvent;
+  startedEvent?: RequestStartedEvent;
 }
 
 // ---------------------------------------------------------------------------
@@ -100,8 +102,29 @@ function makeInitialRows(flow: AnyFlow): RequestRow[] {
 // ---------------------------------------------------------------------------
 
 export function RunViewScreen(props: RunViewScreenProps) {
-  const { flow, variables, onBack, onHelp } = props;
+  const { flow, env, variables, onBack, onHelp } = props;
   const runFlowFn = props._runFlowFn ?? runFlow;
+
+  // Build the globals map: workspace globals values + form overrides for
+  // global keys. This ensures pm.globals.get() works in pre-request scripts.
+  const globalsMap = React.useMemo((): Record<string, string> => {
+    const base: Record<string, string> = {};
+    if (props.workspace.globals) {
+      for (const v of props.workspace.globals.values) {
+        if (v.enabled) base[v.key] = v.value;
+      }
+    }
+    // Form overrides for any globals keys
+    for (const key of Object.keys(base)) {
+      if (key in variables) base[key] = variables[key];
+    }
+    // Also include all form variables in globals so pm.globals.get() finds
+    // user-entered values even if the global wasn't pre-declared
+    for (const [key, value] of Object.entries(variables)) {
+      if (!(key in base)) base[key] = value;
+    }
+    return base;
+  }, [props.workspace.globals, variables]);
 
   // Pre-sorted request definitions for the detail pane lookup
   const sortedDefs = flow.kind === "flow" ? sortRequests(flow.requests) : [];
@@ -180,7 +203,10 @@ export function RunViewScreen(props: RunViewScreenProps) {
     setFocusTarget("list");
     setDetailScrollTop(0);
 
-    const iterable = runFlowFn(activeFlow, variables, { continueOnError });
+    const iterable = runFlowFn(activeFlow, variables, {
+      continueOnError,
+      globals: globalsMap,
+    });
     const iterator = iterable[Symbol.asyncIterator]();
     iteratorRef.current = iterator;
 
@@ -203,7 +229,12 @@ export function RunViewScreen(props: RunViewScreenProps) {
           setRows((prev) => {
             const next = prev.map((r) =>
               r.name === event.name
-                ? { ...r, phase: "running" as RequestPhase, url: event.url }
+                ? {
+                    ...r,
+                    phase: "running" as RequestPhase,
+                    url: event.url,
+                    startedEvent: event,
+                  }
                 : r,
             );
             rowsRef.current = next;
@@ -547,6 +578,7 @@ export function RunViewScreen(props: RunViewScreenProps) {
             <Box flexDirection="column" width={detailWidth}>
               <DetailPane
                 completedEvent={selectedRow?.completedEvent ?? null}
+                startedEvent={selectedRow?.startedEvent ?? null}
                 requestDef={selectedDef}
                 height={contentHeight}
                 scrollTop={detailScrollTop}
