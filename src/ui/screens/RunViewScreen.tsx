@@ -121,6 +121,14 @@ export function RunViewScreen(props: RunViewScreenProps) {
     return map;
   }, [props.workspace.globals, variables]);
 
+  const environmentVariables = React.useMemo((): Record<string, string> => {
+    const map = { ...variables };
+    for (const key of Object.keys(globalsMap)) {
+      delete map[key];
+    }
+    return map;
+  }, [globalsMap, variables]);
+
   // Pre-sorted request definitions for the detail pane lookup
   const sortedDefs = flow.kind === "flow" ? sortRequests(flow.requests) : [];
 
@@ -198,7 +206,7 @@ export function RunViewScreen(props: RunViewScreenProps) {
     setFocusTarget("list");
     setDetailScrollTop(0);
 
-    const iterable = runFlowFn(activeFlow, variables, {
+    const iterable = runFlowFn(activeFlow, environmentVariables, {
       continueOnError,
       globals: globalsMap,
     });

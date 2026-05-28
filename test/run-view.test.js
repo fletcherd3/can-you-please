@@ -102,6 +102,30 @@ function makeRunFn(events) {
   };
 }
 
+function makeCapturingRunFn(capture, events = []) {
+  return function (flow, variables, options) {
+    capture.push({ flow, variables, options });
+    return {
+      [Symbol.asyncIterator]() {
+        let i = 0;
+        return {
+          next() {
+            if (i >= events.length) {
+              return Promise.resolve({ done: true, value: undefined });
+            }
+            const ev = events[i++];
+            return Promise.resolve({ done: false, value: ev });
+          },
+          return() {
+            i = events.length;
+            return Promise.resolve({ done: true, value: undefined });
+          },
+        };
+      },
+    };
+  };
+}
+
 function makePassRun(requestName = "create-user") {
   return makeRunFn([
     {
@@ -457,6 +481,40 @@ test("detail pane auto-shown on run failure", async () => {
 // ---------------------------------------------------------------------------
 // esc behaviour
 // ---------------------------------------------------------------------------
+
+test("RunViewScreen: passes workspace globals only via globals, not environment", async () => {
+  const calls = [];
+  const workspace = makeWorkspace({
+    globals: {
+      values: [
+        { key: "product", value: "zip-pay", enabled: true },
+        { key: "first-name", value: "test", enabled: true },
+      ],
+    },
+  });
+
+  const props = makeProps({
+    workspace,
+    variables: {
+      product: "zip-pay",
+      "first-name": "sam",
+      localOnly: "dev-value",
+    },
+    _runFlowFn: makeCapturingRunFn(calls),
+  });
+
+  const { unmount } = render(React.createElement(RunViewScreen, props));
+  await wait(30);
+
+  assert.equal(calls.length, 1, "expected one runFlow call");
+  assert.deepEqual(calls[0].variables, { localOnly: "dev-value" });
+  assert.deepEqual(calls[0].options.globals, {
+    product: "zip-pay",
+    "first-name": "sam",
+  });
+
+  unmount();
+});
 
 test("esc mid-run aborts and shows cancelled state", async () => {
   const { lastFrame, stdin, unmount } = render(

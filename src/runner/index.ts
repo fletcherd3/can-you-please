@@ -417,9 +417,8 @@ export function runFlow(
 
         emitter.on("request", (_err: unknown, args: AnyObj) => {
           const resp = args["response"] as AnyObj | null;
-          pendingSentRequest = snapshotFromRequest(
-            args["request"] as AnyObj | undefined,
-          );
+          const request = args["request"] as AnyObj | undefined;
+          pendingSentRequest = snapshotFromRequest(request);
           const code: number = resp?.["code"] ?? 0;
           const failed = code < 200 || code >= 300;
 
