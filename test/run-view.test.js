@@ -774,3 +774,84 @@ test("buildDetailLines: returns placeholder when both args null", () => {
     `expected placeholder: ${lines.join("\n")}`,
   );
 });
+
+test("buildDetailLines: startedEvent resolved data shown while pending", () => {
+  const req = makeRequest({
+    url: "https://api.dev/{{env}}/users",
+    headers: { Authorization: "Bearer {{tok}}" },
+    body: { type: "json", content: '{"email":"{{var_email}}"}' },
+  });
+  const startedEvent = {
+    type: "RequestStarted",
+    name: "create-user",
+    method: "POST",
+    url: "https://api.dev/sand/users",
+    requestHeaders: { "Content-Type": "application/json", Authorization: "Bearer real-token" },
+    requestBody: { mode: "raw", content: '{"email":"test@zip.co"}' },
+  };
+  const lines = buildDetailLines(null, req, startedEvent);
+  // Should use resolved URL from startedEvent, not raw requestDef
+  assert.ok(
+    lines.some((l) => l.includes("https://api.dev/sand/users")),
+    `expected resolved URL: ${lines.join("\n")}`,
+  );
+  // Should show resolved header, not raw {{tok}}
+  assert.ok(
+    lines.some((l) => l.includes("Bearer real-token")),
+    `expected resolved Authorization header: ${lines.join("\n")}`,
+  );
+  assert.ok(
+    !lines.some((l) => l.includes("{{tok}}")),
+    `should not contain unresolved {{tok}}: ${lines.join("\n")}`,
+  );
+  // Should show resolved body, not raw {{var_email}}
+  assert.ok(
+    lines.some((l) => l.includes("test@zip.co")),
+    `expected resolved body: ${lines.join("\n")}`,
+  );
+  assert.ok(
+    !lines.some((l) => l.includes("{{var_email}}")),
+    `should not contain unresolved {{var_email}}: ${lines.join("\n")}`,
+  );
+  // Should still show (pending) for response
+  assert.ok(
+    lines.some((l) => l.includes("(pending)")),
+    `expected (pending) response: ${lines.join("\n")}`,
+  );
+});
+
+test("buildDetailLines: completedEvent takes precedence over startedEvent", () => {
+  const startedEvent = {
+    type: "RequestStarted",
+    name: "create-user",
+    method: "POST",
+    url: "https://api.dev/users",
+    requestHeaders: { Authorization: "Bearer started" },
+    requestBody: { mode: "raw", content: '{"from":"started"}' },
+  };
+  const completedEvent = {
+    type: "RequestCompleted",
+    name: "create-user",
+    method: "POST",
+    url: "https://api.dev/users",
+    status: 200,
+    statusText: "OK",
+    responseTimeMs: 42,
+    headers: {},
+    body: '{"ok":true}',
+    requestHeaders: { Authorization: "Bearer completed" },
+    requestBody: { mode: "raw", content: '{"from":"completed"}' },
+    failed: false,
+    consoleOutput: [],
+    variablesSet: {},
+  };
+  const lines = buildDetailLines(completedEvent, null, startedEvent);
+  assert.ok(
+    lines.some((l) => l.includes("Bearer completed")),
+    `completedEvent header should win: ${lines.join("\n")}`,
+  );
+  assert.ok(
+    !lines.some((l) => l.includes("Bearer started")),
+    `startedEvent header should not appear: ${lines.join("\n")}`,
+  );
+});

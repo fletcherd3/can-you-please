@@ -102,28 +102,23 @@ function makeInitialRows(flow: AnyFlow): RequestRow[] {
 // ---------------------------------------------------------------------------
 
 export function RunViewScreen(props: RunViewScreenProps) {
-  const { flow, env, variables, onBack, onHelp } = props;
+  const { flow, variables, onBack, onHelp } = props;
   const runFlowFn = props._runFlowFn ?? runFlow;
 
-  // Build the globals map: workspace globals values + form overrides for
-  // global keys. This ensures pm.globals.get() works in pre-request scripts.
+  // Build the globals map from workspace-declared globals, overridden by any
+  // form values for the same keys. Only declared global keys are included so
+  // we preserve Postman's variable-scoping semantics (pm.globals.get() only
+  // finds values that were declared as globals).
   const globalsMap = React.useMemo((): Record<string, string> => {
-    const base: Record<string, string> = {};
+    const map: Record<string, string> = {};
     if (props.workspace.globals) {
       for (const v of props.workspace.globals.values) {
-        if (v.enabled) base[v.key] = v.value;
+        if (v.enabled) {
+          map[v.key] = v.key in variables ? variables[v.key] : v.value;
+        }
       }
     }
-    // Form overrides for any globals keys
-    for (const key of Object.keys(base)) {
-      if (key in variables) base[key] = variables[key];
-    }
-    // Also include all form variables in globals so pm.globals.get() finds
-    // user-entered values even if the global wasn't pre-declared
-    for (const [key, value] of Object.entries(variables)) {
-      if (!(key in base)) base[key] = value;
-    }
-    return base;
+    return map;
   }, [props.workspace.globals, variables]);
 
   // Pre-sorted request definitions for the detail pane lookup
