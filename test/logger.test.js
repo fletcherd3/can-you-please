@@ -256,9 +256,27 @@ test("createRunLogger: section includes method, status and timing", async () => 
   const flow = makeFlow({ requests: [makeRequest({ method: "POST" })] });
   const logger = createRunLogger(flow, dir);
 
-  logger.write(makeStarted({ method: "POST" }));
   logger.write(
-    makeCompleted({ method: "POST", status: 201, responseTimeMs: 88 }),
+    makeStarted({
+      method: "POST",
+      resolvedRequest: {
+        method: "POST",
+        url: "https://example.com",
+        headers: {},
+      },
+    }),
+  );
+  logger.write(
+    makeCompleted({
+      method: "POST",
+      status: 201,
+      responseTimeMs: 88,
+      resolvedRequest: {
+        method: "POST",
+        url: "https://example.com",
+        headers: {},
+      },
+    }),
   );
   await logger.close("pass");
 
@@ -283,6 +301,152 @@ test("createRunLogger: response body appears in section", async () => {
   const [filename] = await readdir(dir);
   const content = await readFile(join(dir, filename), "utf8");
   assert.ok(content.includes('{"id":"abc"}'));
+});
+
+test("createRunLogger: includes request source and definition snapshot fallback", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "cyp-logger-test-"));
+  const flow = makeFlow({
+    requests: [
+      makeRequest({
+        method: "POST",
+        url: "https://api.dev/{{env}}/users",
+        headers: { Authorization: "Bearer {{tok}}" },
+        body: { type: "json", content: '{"from":"definition"}' },
+      }),
+    ],
+  });
+  const logger = createRunLogger(flow, dir);
+
+  logger.write(
+    makeStarted({
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      resolvedRequest: undefined,
+    }),
+  );
+  logger.write(
+    makeCompleted({
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      resolvedRequest: undefined,
+      sentRequest: undefined,
+    }),
+  );
+  await logger.close("pass");
+
+  const [filename] = await readdir(dir);
+  const content = await readFile(join(dir, filename), "utf8");
+  assert.ok(content.includes("request source: definition"));
+  assert.ok(content.includes("url: https://api.dev/{{env}}/users"));
+  assert.ok(content.includes("Authorization: Bearer {{tok}}"));
+  assert.ok(content.includes('{"from":"definition"}'));
+});
+
+test("createRunLogger: uses resolved snapshot when sent snapshot is unavailable", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "cyp-logger-test-"));
+  const flow = makeFlow({
+    requests: [
+      makeRequest({
+        method: "POST",
+        url: "https://api.dev/{{env}}/users",
+        headers: { Authorization: "Bearer {{tok}}" },
+        body: { type: "json", content: '{"from":"definition"}' },
+      }),
+    ],
+  });
+  const logger = createRunLogger(flow, dir);
+
+  logger.write(
+    makeStarted({
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      resolvedRequest: {
+        method: "POST",
+        url: "https://api.dev/sand/users",
+        headers: { Authorization: "Bearer resolved" },
+        body: { mode: "raw", content: '{"from":"resolved"}' },
+      },
+    }),
+  );
+  logger.write(
+    makeCompleted({
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      resolvedRequest: {
+        method: "POST",
+        url: "https://api.dev/sand/users",
+        headers: { Authorization: "Bearer resolved" },
+        body: { mode: "raw", content: '{"from":"resolved"}' },
+      },
+      sentRequest: undefined,
+    }),
+  );
+  await logger.close("pass");
+
+  const [filename] = await readdir(dir);
+  const content = await readFile(join(dir, filename), "utf8");
+  assert.ok(content.includes("request source: resolved"));
+  assert.ok(content.includes("url: https://api.dev/sand/users"));
+  assert.ok(content.includes("Authorization: Bearer resolved"));
+  assert.ok(content.includes('{"from":"resolved"}'));
+  assert.ok(!content.includes("{{tok}}"));
+  assert.ok(!content.includes('{"from":"definition"}'));
+});
+
+test("createRunLogger: sent snapshot retrospectively replaces resolved request detail", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "cyp-logger-test-"));
+  const flow = makeFlow({
+    requests: [
+      makeRequest({
+        method: "POST",
+        url: "https://api.dev/{{env}}/users",
+        headers: { Authorization: "Bearer {{tok}}" },
+        body: { type: "json", content: '{"from":"definition"}' },
+      }),
+    ],
+  });
+  const logger = createRunLogger(flow, dir);
+
+  logger.write(
+    makeStarted({
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      resolvedRequest: {
+        method: "POST",
+        url: "https://api.dev/sand/users",
+        headers: { Authorization: "Bearer resolved" },
+        body: { mode: "raw", content: '{"from":"resolved"}' },
+      },
+    }),
+  );
+  logger.write(
+    makeCompleted({
+      method: "POST",
+      url: "https://api.dev/sand/users",
+      resolvedRequest: {
+        method: "POST",
+        url: "https://api.dev/sand/users",
+        headers: { Authorization: "Bearer resolved" },
+        body: { mode: "raw", content: '{"from":"resolved"}' },
+      },
+      sentRequest: {
+        method: "POST",
+        url: "https://api.dev/sent/users",
+        headers: { Authorization: "Bearer sent" },
+        body: { mode: "raw", content: '{"from":"sent"}' },
+      },
+    }),
+  );
+  await logger.close("pass");
+
+  const [filename] = await readdir(dir);
+  const content = await readFile(join(dir, filename), "utf8");
+  assert.ok(content.includes("request source: sent"));
+  assert.ok(content.includes("url: https://api.dev/sent/users"));
+  assert.ok(content.includes("Authorization: Bearer sent"));
+  assert.ok(content.includes('{"from":"sent"}'));
+  assert.ok(!content.includes("Bearer resolved"));
+  assert.ok(!content.includes('{"from":"resolved"}'));
 });
 
 test("createRunLogger: error detail section on failure", async () => {

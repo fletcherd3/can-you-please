@@ -94,39 +94,49 @@ function buildSection(
 ): string {
   const lines: string[] = [];
 
+  const requestSource =
+    completed.sentRequest != null
+      ? "sent"
+      : completed.resolvedRequest != null || started.resolvedRequest != null
+        ? "resolved"
+        : "definition";
+
+  const requestSnapshot =
+    completed.sentRequest ??
+    completed.resolvedRequest ??
+    started.resolvedRequest ??
+    (requestDef != null
+      ? {
+          method: requestDef.method,
+          url: requestDef.url,
+          headers: requestDef.headers,
+          body:
+            requestDef.body != null
+              ? {
+                  mode: requestDef.body.type,
+                  content: requestDef.body.content,
+                }
+              : undefined,
+        }
+      : null);
+
   // Delimiter / section header
   lines.push(
     `=== request ${index}/${total}: ${completed.name}` +
-      ` (${completed.method} ${completed.status}, ${completed.responseTimeMs}ms) ===`,
+      ` (${requestSnapshot?.method ?? completed.method} ${completed.status}, ${completed.responseTimeMs}ms) ===`,
   );
   lines.push(`timestamp: ${eventTimestamp.toISOString()}`);
-  lines.push(`url: ${completed.url || started.url}`);
+  lines.push(`request source: ${requestSource}`);
+  lines.push(`url: ${requestSnapshot?.url ?? completed.url ?? started.url}`);
   lines.push(``);
 
-  // Request detail — prefer the actual sent snapshot, then the resolved
-  // pre-send snapshot, falling back to the flow definition only if neither
-  // provenance snapshot is available.
-  const headersToLog =
-    completed.sentRequest?.headers != null &&
-    Object.keys(completed.sentRequest.headers).length > 0
-      ? completed.sentRequest.headers
-      : completed.resolvedRequest?.headers != null &&
-          Object.keys(completed.resolvedRequest.headers).length > 0
-        ? completed.resolvedRequest.headers
-        : (requestDef?.headers ?? {});
   lines.push(`request headers:`);
-  lines.push(formatHeaders(headersToLog));
+  lines.push(formatHeaders(requestSnapshot?.headers ?? {}));
 
-  const bodyToLog =
-    completed.sentRequest?.body ??
-    completed.resolvedRequest?.body ??
-    (requestDef?.body != null
-      ? { mode: requestDef.body.type, content: requestDef.body.content }
-      : undefined);
-  if (bodyToLog != null) {
+  if (requestSnapshot?.body != null) {
     lines.push(``);
     lines.push(`request body:`);
-    lines.push(bodyToLog.content);
+    lines.push(requestSnapshot.body.content);
   }
   lines.push(``);
 
