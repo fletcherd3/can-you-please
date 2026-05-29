@@ -45,7 +45,13 @@ test("ungrouped: loads two flows, two environments, globals", async () => {
 
   // globals
   assert.ok(ws.globals, "should have globals");
-  assert.equal(ws.globals.values[0].key, "app-version");
+  assert.deepEqual(
+    ws.globals.values.map((value) => [value.key, value.value]),
+    [
+      ["app-version", "1.1.0"],
+      ["workspace-token", "local-only-token"],
+    ],
+  );
 
   // isValidWorkspace
   assert.ok(isValidWorkspace(ws));
@@ -186,11 +192,18 @@ test("vars-and-enums: script parsed on request", async () => {
   assert.ok(req.scripts[0].code.includes("pm.variables.set"));
 });
 
-test("vars-and-enums: globals loaded via workspace.globals.yaml", async () => {
+test("vars-and-enums: workspace .env populates globals when present", async () => {
   const ws = await loadWorkspace(join(fixturesDir, "vars-and-enums"));
   assert.ok(ws.globals);
-  assert.equal(ws.globals.values[0].key, "app-version");
-  assert.equal(ws.globals.values[0].value, "2.0.0");
+  assert.deepEqual(
+    ws.globals.values.map((value) => [value.key, value.value]),
+    [
+      ["app-version", "2.0.0"],
+      ["first-name", "env-file-first"],
+      ["email", "env-file@example.com"],
+      ["product", "env-file-product"],
+    ],
+  );
 });
 
 // ---------------------------------------------------------------------------

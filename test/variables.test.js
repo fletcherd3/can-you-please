@@ -395,3 +395,27 @@ test("resolveVariables: form input wins over environment", () => {
   });
   assert.equal(result.base, "override.example.com");
 });
+
+test("resolveVariables: .env-derived globals beat flow defaults", () => {
+  const flow = makeFlow({ variables: { email: "flow@example.com" } });
+  const globals = {
+    values: [{ key: "email", value: "env-file@example.com", enabled: true }],
+    filePath: "/fake/.env",
+  };
+  const result = resolveVariables(flow, null, globals, {});
+  assert.equal(result.email, "env-file@example.com");
+});
+
+test("resolveVariables: globals-only values are surfaced without env layer", () => {
+  const flow = makeFlow({ requires: ["first-name", "email"] });
+  const globals = {
+    values: [
+      { key: "first-name", value: "env-file-first", enabled: true },
+      { key: "email", value: "env-file@example.com", enabled: true },
+    ],
+    filePath: "/fake/.env",
+  };
+  const result = resolveVariables(flow, null, globals, {});
+  assert.equal(result["first-name"], "env-file-first");
+  assert.equal(result.email, "env-file@example.com");
+});

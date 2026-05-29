@@ -33,6 +33,10 @@ async function readYaml(filePath: string): Promise<unknown> {
   return parseYaml(text);
 }
 
+async function readText(filePath: string): Promise<string> {
+  return readFile(filePath, "utf8");
+}
+
 /** readdir that returns an empty array instead of throwing when dir is absent */
 async function readdirSafe(dir: string): Promise<string[]> {
   try {
@@ -100,6 +104,40 @@ async function loadEnvironments(envDir: string): Promise<Environment[]> {
 // Globals
 // ---------------------------------------------------------------------------
 
+function parseWorkspaceEnvFile(text: string): EnvValue[] {
+  const values: EnvValue[] = [];
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+
+    const equalsIdx = line.indexOf("=");
+    if (equalsIdx < 0) continue;
+
+    const key = line.slice(0, equalsIdx).trim();
+    if (!key) continue;
+
+    values.push({
+      key,
+      value: line.slice(equalsIdx + 1),
+      enabled: true,
+    });
+  }
+
+  return values;
+}
+
+async function loadWorkspaceEnvGlobals(rootPath: string): Promise<Globals | null> {
+  const filePath = join(rootPath, ".env");
+  if (!(await fileExists(filePath))) return null;
+
+  const text = await readText(filePath);
+  return {
+    values: parseWorkspaceEnvFile(text),
+    filePath,
+  };
+}
+
 async function loadGlobals(globalsDir: string): Promise<Globals | null> {
   const files = await readdirSafe(globalsDir);
   const globalsFiles = files.filter((f) => f.endsWith(".globals.yaml"));
@@ -118,6 +156,28 @@ async function loadGlobals(globalsDir: string): Promise<Globals | null> {
   } catch {
     return null;
   }
+}
+
+function mergeGlobals(
+  globals: Globals | null,
+  workspaceEnvGlobals: Globals | null,
+): Globals | null {
+  if (!globals && !workspaceEnvGlobals) return null;
+
+  const merged = new Map<string, EnvValue>();
+
+  for (const value of globals?.values ?? []) {
+    merged.set(value.key, value);
+  }
+
+  for (const value of workspaceEnvGlobals?.values ?? []) {
+    merged.set(value.key, value);
+  }
+
+  return {
+    values: Array.from(merged.values()),
+    filePath: globals?.filePath ?? workspaceEnvGlobals?.filePath ?? "",
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -365,9 +425,10 @@ export async function loadWorkspace(rootPath: string): Promise<Workspace> {
   const globalsDir = join(rootPath, "postman", "globals");
 
   // Load environments and globals in parallel
-  const [environments, globals] = await Promise.all([
+  const [environments, globals, workspaceEnvGlobals] = await Promise.all([
     loadEnvironments(environmentsDir),
     loadGlobals(globalsDir),
+    loadWorkspaceEnvGlobals(rootPath),
   ]);
 
   // Load flows
@@ -407,7 +468,7 @@ export async function loadWorkspace(rootPath: string): Promise<Workspace> {
     rootPath,
     flows: [...goodFlows, ...brokenFlows],
     environments,
-    globals,
+    globals: mergeGlobals(globals, workspaceEnvGlobals),
   };
 }
 

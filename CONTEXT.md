@@ -44,6 +44,11 @@ scanning its requests. A flow's `definition.yaml` may mark a subset
 as **required** and may attach an **enum** of suggested values to
 any variable.
 
+**Workspace env file**:
+A `.env` file at the **Workspace** root whose key/value pairs are
+injected into **Globals** only when running flows in that workspace.
+_Avoid_: shell env, secret injection, local env
+
 **Required variable**:
 A variable explicitly listed under `required` in the flow's
 `definition.yaml`. The variables form blocks the run until every
@@ -66,7 +71,7 @@ constraining.
 - A **Request** references zero or more **Variables**.
 - A **Variable**'s value resolves at run time, lowest precedence
   first:
-  `flow defaults < globals < environment < form input < pm.variables.set()`
+  `flow defaults < globals (including workspace env file) < environment < form input < pm.variables.set()`
 
 ## Example dialogue
 
@@ -84,3 +89,6 @@ constraining.
   inside `postman/collections/`; the repo as a whole is the
   *Workspace*. The on-disk `$kind: collection` marker is a Postman
   artefact and not part of our domain language.
+- "shell environment variable" was used for values supplied to runs.
+  Resolved: inherited process environment is not part of the model;
+  the supported source is the **Workspace env file**.
