@@ -60,6 +60,13 @@ function makeRequest(url = "https://{{base}}/users", extraVarUrls = []) {
   }));
 }
 
+function makeGlobals(values = [], filePath = "/tmp/ws/globals.yaml") {
+  return {
+    values,
+    filePath,
+  };
+}
+
 function makeProps(overrides = {}) {
   return {
     flow: makeFlow(),
@@ -207,6 +214,111 @@ test("disabled env values are excluded from pre-fill", () => {
   assert.ok(
     lastFrame().includes("flow-default.com"),
     `flow default should remain when env value is disabled: ${lastFrame()}`,
+  );
+  unmount();
+});
+
+test("shows '(from .env)' when displayed value comes from workspace env", () => {
+  const flow = makeFlow({
+    requests: makeRequest("https://api/?email={{email}}"),
+  });
+  const globals = makeGlobals(
+    [
+      {
+        key: "email",
+        value: "env-file@example.com",
+        enabled: true,
+        source: "workspace-env",
+      },
+    ],
+    "/tmp/ws/.env",
+  );
+  const { lastFrame, unmount } = render(
+    React.createElement(VariablesFormScreen, makeProps({ flow, globals })),
+  );
+  const frame = lastFrame();
+  assert.ok(frame.includes("env-file@example.com"), `expected value in: ${frame}`);
+  assert.ok(frame.includes("(from .env)"), `expected hint in: ${frame}`);
+  unmount();
+});
+
+test("editing away from workspace env value removes '(from .env)' immediately", async () => {
+  const flow = makeFlow({
+    requests: makeRequest("https://api/?email={{email}}"),
+  });
+  const globals = makeGlobals(
+    [
+      {
+        key: "email",
+        value: "env-file@example.com",
+        enabled: true,
+        source: "workspace-env",
+      },
+    ],
+    "/tmp/ws/.env",
+  );
+  const { stdin, lastFrame, unmount } = render(
+    React.createElement(VariablesFormScreen, makeProps({ flow, globals })),
+  );
+  assert.ok(lastFrame().includes("(from .env)"), "expected initial hint");
+  stdin.write("x");
+  await wait();
+  assert.ok(
+    !lastFrame().includes("(from .env)"),
+    `hint should disappear after edit: ${lastFrame()}`,
+  );
+  unmount();
+});
+
+test("editing back to workspace env value restores '(from .env)', but env overrides do not show it", async () => {
+  const flow = makeFlow({
+    requests: makeRequest("https://api/?token={{token}}&base={{base}}"),
+  });
+  const globals = makeGlobals(
+    [
+      {
+        key: "token",
+        value: "abc",
+        enabled: true,
+        source: "workspace-env",
+      },
+      {
+        key: "base",
+        value: "workspace.example.com",
+        enabled: true,
+        source: "workspace-env",
+      },
+    ],
+    "/tmp/ws/.env",
+  );
+  const env = makeEnv("dev", [
+    { key: "base", value: "env.example.com", enabled: true },
+  ]);
+  const { stdin, lastFrame, unmount } = render(
+    React.createElement(VariablesFormScreen, makeProps({ flow, globals, env })),
+  );
+  let frame = lastFrame();
+  assert.ok(frame.includes("(from .env)"), `expected token hint initially: ${frame}`);
+  assert.ok(frame.includes("env.example.com"), `expected env override value: ${frame}`);
+  assert.equal(
+    frame.match(/\(from \.env\)/g)?.length ?? 0,
+    1,
+    `only token should show the hint: ${frame}`,
+  );
+
+  stdin.write("x");
+  await wait();
+  frame = lastFrame();
+  assert.ok(!frame.includes("(from .env)"), `hint should disappear after edit: ${frame}`);
+
+  stdin.write("\x7f");
+  await wait();
+  frame = lastFrame();
+  assert.ok(frame.includes("abc"), `expected restored value: ${frame}`);
+  assert.equal(
+    frame.match(/\(from \.env\)/g)?.length ?? 0,
+    1,
+    `hint should reappear only for restored workspace env value: ${frame}`,
   );
   unmount();
 });

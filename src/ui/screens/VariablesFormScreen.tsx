@@ -56,6 +56,20 @@ export function VariablesFormScreen({
     );
   }, [flow, env, globals, meta]);
 
+  const workspaceEnvValues = useMemo((): Record<string, string> => {
+    if (!globals) return {};
+    return Object.fromEntries(
+      globals.values
+        .filter(
+          (value) =>
+            value.enabled &&
+            value.source === "workspace-env" &&
+            value.value !== "",
+        )
+        .map((value) => [value.key, value.value]),
+    );
+  }, [globals]);
+
   // -------------------------------------------------------------------------
   // Form state
   // -------------------------------------------------------------------------
@@ -140,6 +154,9 @@ export function VariablesFormScreen({
     const isActive = focusedIndex === globalIndex;
     const hasError = showErrors && m.required && !(values[m.name] ?? "");
     const ddOpen = dropdownOpenAt === globalIndex;
+    const workspaceEnvValue = workspaceEnvValues[m.name];
+    const showWorkspaceEnvHint =
+      workspaceEnvValue !== undefined && values[m.name] === workspaceEnvValue;
 
     return (
       <Box key={m.name} flexDirection="row">
@@ -151,20 +168,27 @@ export function VariablesFormScreen({
             {m.name}
           </Text>
         </Box>
-        <EnumInput
-          value={values[m.name] ?? ""}
-          onChange={(v) => setValue(m.name, v)}
-          enums={m.enums}
-          isActive={isActive}
-          hasError={hasError}
-          dropdownOpen={ddOpen}
-          onOpenDropdown={() => setDropdownOpenAt(globalIndex)}
-          onCloseDropdown={() => setDropdownOpenAt(null)}
-          onSelectDropdownItem={(item) => {
-            setValue(m.name, item);
-            setDropdownOpenAt(null);
-          }}
-        />
+        <Box flexDirection="column">
+          <EnumInput
+            value={values[m.name] ?? ""}
+            onChange={(v) => setValue(m.name, v)}
+            enums={m.enums}
+            isActive={isActive}
+            hasError={hasError}
+            dropdownOpen={ddOpen}
+            onOpenDropdown={() => setDropdownOpenAt(globalIndex)}
+            onCloseDropdown={() => setDropdownOpenAt(null)}
+            onSelectDropdownItem={(item) => {
+              setValue(m.name, item);
+              setDropdownOpenAt(null);
+            }}
+          />
+          {showWorkspaceEnvHint && (
+            <Box marginLeft={2}>
+              <Text dimColor>(from .env)</Text>
+            </Box>
+          )}
+        </Box>
       </Box>
     );
   }

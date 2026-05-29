@@ -55,6 +55,7 @@ export interface EnvValue {
   key: string;
   value: string;
   enabled: boolean;
+  source?: "globals-file" | "workspace-env";
 }
 
 export interface Environment {

@@ -69,6 +69,7 @@ function parseEnvValues(raw: unknown): EnvValue[] {
     key: String(v["key"] ?? ""),
     value: String(v["value"] ?? ""),
     enabled: v["enabled"] !== false,
+    source: "globals-file",
   }));
 }
 
@@ -130,6 +131,7 @@ function parseWorkspaceEnvFile(text: string): EnvValue[] {
       key,
       value: rawLine.slice(equalsIdx + 1),
       enabled: true,
+      source: "workspace-env",
     });
   }
 
