@@ -97,6 +97,25 @@ test("detectVariables: scans tokens from request body content", () => {
   );
 });
 
+test("detectVariables: excludes postman dynamic variables", () => {
+  const flow = makeFlow({
+    requests: [
+      makeRequest({
+        url: "https://example.com/{{userId}}",
+        body: {
+          type: "json",
+          content: '{"requestId":"{{$randomUUID}}","userId":"{{userId}}"}',
+        },
+      }),
+    ],
+  });
+  const meta = detectVariables(flow);
+  assert.deepEqual(
+    meta.map((m) => m.name),
+    ["userId"],
+  );
+});
+
 test("detectVariables: scans tokens across url, headers, and body", () => {
   const flow = makeFlow({
     requests: [

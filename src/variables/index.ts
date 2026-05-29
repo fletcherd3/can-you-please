@@ -12,12 +12,23 @@ export type VariableLayer = Record<string, string>;
 // Matches every {{name}} token in a string.
 const TOKEN_RE = /\{\{([^}]+)\}\}/g;
 
+// Postman dynamic variables (for example {{$randomUUID}}) are resolved
+// by Newman at request runtime. They must not be surfaced as user-input
+// variables or passed through as blank values, otherwise we override the
+// runtime resolver and break dynamic expansion.
+function isDynamicVariableToken(name: string): boolean {
+  return name.startsWith("$");
+}
+
 function scanTokens(text: string): string[] {
   const names: string[] = [];
   let m: RegExpExecArray | null;
   TOKEN_RE.lastIndex = 0;
   while ((m = TOKEN_RE.exec(text)) !== null) {
-    names.push(m[1]);
+    const name = m[1];
+    if (!isDynamicVariableToken(name)) {
+      names.push(name);
+    }
   }
   return names;
 }

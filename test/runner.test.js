@@ -511,3 +511,62 @@ test("sent snapshot captures runtime-added system headers", async () => {
     "sent snapshot should include runtime-added system headers",
   );
 });
+
+test("dynamic postman vars resolve at runtime when not overridden", async () => {
+  let capturedRequestBody = "";
+  server.removeAllListeners("request");
+  server.on("request", (req, res) => {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", () => {
+      capturedRequestBody = body;
+      if (req.url === "/ok") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+  });
+
+  const flow = makeFlow({
+    requests: [
+      makeRequest("dynamic-var", `${baseUrl}/ok`, {
+        method: "POST",
+        body: {
+          type: "json",
+          content: '{"requestId":"{{$randomUUID}}","userId":"{{userId}}"}',
+        },
+      }),
+    ],
+  });
+
+  const events = await collect(
+    runFlow(flow, { userId: "u-77" }, { continueOnError: false }),
+  );
+  const completed = events.find((e) => e.type === "RequestCompleted");
+
+  assert.ok(completed, "should have RequestCompleted");
+  assert.match(
+    completed.resolvedRequest?.body?.content ?? "",
+    /"requestId":"[0-9a-f-]{36}"/i,
+    "resolved body should contain a generated UUID",
+  );
+  assert.equal(
+    completed.resolvedRequest?.body?.content?.includes("{{$randomUUID}}"),
+    false,
+    "resolved body should not retain the dynamic var token",
+  );
+  assert.match(
+    capturedRequestBody,
+    /"requestId":"[0-9a-f-]{36}"/i,
+    "sent request body should contain a generated UUID",
+  );
+  assert.ok(
+    capturedRequestBody.includes('"userId":"u-77"'),
+    "sent request body should still resolve normal variables",
+  );
+});
