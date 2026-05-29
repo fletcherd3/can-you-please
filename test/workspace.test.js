@@ -208,45 +208,74 @@ test("vars-and-enums: workspace .env populates globals when present", async () =
   );
 });
 
-test("workspace .env: blank values are accepted", async () => {
+async function makeMinimalWorkspace(tmpDir) {
+  await fs.mkdir(join(tmpDir, "postman", "collections", "example-flow", ".resources"), {
+    recursive: true,
+  });
+  await fs.mkdir(join(tmpDir, "postman", "environments"), {
+    recursive: true,
+  });
+  await fs.writeFile(
+    join(tmpDir, "postman", "collections", "example-flow", ".resources", "definition.yaml"),
+    [
+      'name: "example"',
+      'environments: ["dev"]',
+    ].join("\n"),
+  );
+  await fs.writeFile(
+    join(tmpDir, "postman", "collections", "example-flow", "01-example.request.yaml"),
+    [
+      'url: "https://example.com?token={{token}}&shared={{shared}}&blank={{blank}}"',
+      'method: "GET"',
+    ].join("\n"),
+  );
+  await fs.writeFile(
+    join(tmpDir, "postman", "environments", "dev.environment.yaml"),
+    [
+      'name: "dev"',
+      "values: []",
+    ].join("\n"),
+  );
+}
+
+test("workspace .env: parses comments, blank values, and duplicate keys", async () => {
   const tmpDir = await fs.mkdtemp(join(os.tmpdir(), "cyp-workspace-env-"));
   try {
-    await fs.mkdir(join(tmpDir, "postman", "collections", "example-flow", ".resources"), {
-      recursive: true,
-    });
-    await fs.mkdir(join(tmpDir, "postman", "environments"), {
-      recursive: true,
-    });
+    await makeMinimalWorkspace(tmpDir);
+    await fs.mkdir(join(tmpDir, "postman", "globals"), { recursive: true });
     await fs.writeFile(
-      join(tmpDir, "postman", "collections", "example-flow", ".resources", "definition.yaml"),
+      join(tmpDir, "postman", "globals", "workspace.globals.yaml"),
       [
-        'name: "example"',
-        'environments: ["dev"]',
+        "values:",
+        '  - key: shared',
+        '    value: "globals-value"',
+        "    enabled: true",
+        '  - key: from-globals-only',
+        '    value: "checked-in"',
+        "    enabled: true",
       ].join("\n"),
     );
     await fs.writeFile(
-      join(tmpDir, "postman", "collections", "example-flow", "01-example.request.yaml"),
+      join(tmpDir, ".env"),
       [
-        'url: "https://example.com"',
-        'method: "GET"',
+        "# leading comment",
+        "",
+        "blank=",
+        "shared=first",
+        "shared=second",
+        "token=env-token",
       ].join("\n"),
     );
-    await fs.writeFile(
-      join(tmpDir, "postman", "environments", "dev.environment.yaml"),
-      [
-        'name: "dev"',
-        "values: []",
-      ].join("\n"),
-    );
-    await fs.writeFile(join(tmpDir, ".env"), "blank=\nfilled=value\n");
 
     const ws = await loadWorkspace(tmpDir);
     assert.ok(ws.globals);
     assert.deepEqual(
-      ws.globals.values.map((value) => [value.key, value.value]),
+      ws.globals.values.map((value) => [value.key, value.value, value.source ?? null]),
       [
-        ["blank", ""],
-        ["filled", "value"],
+        ["shared", "second", "workspace-env"],
+        ["from-globals-only", "checked-in", "globals-file"],
+        ["blank", "", "workspace-env"],
+        ["token", "env-token", "workspace-env"],
       ],
     );
   } finally {
@@ -257,38 +286,27 @@ test("workspace .env: blank values are accepted", async () => {
 test("workspace .env: malformed file fails workspace loading with parse error", async () => {
   const tmpDir = await fs.mkdtemp(join(os.tmpdir(), "cyp-workspace-env-"));
   try {
-    await fs.mkdir(join(tmpDir, "postman", "collections", "example-flow", ".resources"), {
-      recursive: true,
-    });
-    await fs.mkdir(join(tmpDir, "postman", "environments"), {
-      recursive: true,
-    });
-    await fs.writeFile(
-      join(tmpDir, "postman", "collections", "example-flow", ".resources", "definition.yaml"),
-      [
-        'name: "example"',
-        'environments: ["dev"]',
-      ].join("\n"),
-    );
-    await fs.writeFile(
-      join(tmpDir, "postman", "collections", "example-flow", "01-example.request.yaml"),
-      [
-        'url: "https://example.com"',
-        'method: "GET"',
-      ].join("\n"),
-    );
-    await fs.writeFile(
-      join(tmpDir, "postman", "environments", "dev.environment.yaml"),
-      [
-        'name: "dev"',
-        "values: []",
-      ].join("\n"),
-    );
+    await makeMinimalWorkspace(tmpDir);
     await fs.writeFile(join(tmpDir, ".env"), "GOOD=value\nNOT_VALID\n");
 
     await assert.rejects(
       () => loadWorkspace(tmpDir),
       /failed to load .*\.env: invalid \.env line 2: expected KEY=VALUE, got "NOT_VALID"/,
+    );
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("workspace .env: empty key fails workspace loading with parse error", async () => {
+  const tmpDir = await fs.mkdtemp(join(os.tmpdir(), "cyp-workspace-env-"));
+  try {
+    await makeMinimalWorkspace(tmpDir);
+    await fs.writeFile(join(tmpDir, ".env"), "=missing-key\n");
+
+    await assert.rejects(
+      () => loadWorkspace(tmpDir),
+      /failed to load .*\.env: invalid \.env line 1: key is required before '='/,
     );
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });

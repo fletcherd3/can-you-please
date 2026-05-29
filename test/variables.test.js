@@ -406,6 +406,44 @@ test("resolveVariables: .env-derived globals beat flow defaults", () => {
   assert.equal(result.email, "env-file@example.com");
 });
 
+test("resolveVariables: checked-in globals < .env < env < form input", () => {
+  const flow = makeFlow({
+    variables: { shared: "flow", flowOnly: "flow-only" },
+    requires: ["shared", "envOnly", "formOnly", "globalsOnly", "flowOnly"],
+  });
+  const globals = {
+    values: [
+      { key: "shared", value: "checked-in", enabled: true, source: "globals-file" },
+      { key: "shared", value: "workspace-env", enabled: true, source: "workspace-env" },
+      { key: "globalsOnly", value: "globals-value", enabled: true, source: "globals-file" },
+      { key: "disabledGlobal", value: "ignore-me", enabled: false, source: "workspace-env" },
+    ],
+    filePath: "/fake/.env",
+  };
+  const env = {
+    id: "dev",
+    name: "dev",
+    filePath: "/fake/env",
+    values: [
+      { key: "shared", value: "env", enabled: true },
+      { key: "envOnly", value: "env-only", enabled: true },
+    ],
+  };
+
+  const result = resolveVariables(flow, env, globals, {
+    shared: "form",
+    formOnly: "form-only",
+  });
+
+  assert.deepEqual(result, {
+    shared: "form",
+    flowOnly: "flow-only",
+    globalsOnly: "globals-value",
+    envOnly: "env-only",
+    formOnly: "form-only",
+  });
+});
+
 test("resolveVariables: globals-only values are surfaced without env layer", () => {
   const flow = makeFlow({ requires: ["first-name", "email"] });
   const globals = {
