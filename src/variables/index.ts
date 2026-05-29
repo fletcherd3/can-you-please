@@ -9,8 +9,24 @@ export interface VariableMeta {
 
 export type VariableLayer = Record<string, string>;
 
+type VariableValueSource =
+  | "flow-default"
+  | "globals-file"
+  | "workspace-env"
+  | "environment"
+  | "form-input";
+
+export interface ResolvedVariableDisplay {
+  value: string;
+  runtimeValue: string;
+  submittedValue: string;
+  fromWorkspaceEnv: boolean;
+  workspaceEnvKey?: string;
+}
+
 // Matches every {{name}} token in a string.
 const TOKEN_RE = /\{\{([^}]+)\}\}/g;
+const EXACT_TOKEN_RE = /^\{\{([^}]+)\}\}$/;
 
 // Postman dynamic variables (for example {{$randomUUID}}) are resolved
 // by Newman at request runtime. They must not be surfaced as user-input
@@ -129,6 +145,135 @@ export function resolveVariables(
     if (!(name in result)) {
       result[name] = "";
     }
+  }
+
+  return result;
+}
+
+function buildSourceMap(
+  flow: Flow,
+  env: Environment | null,
+  globals: Globals | null,
+  formInput: Record<string, string>,
+): Map<string, { value: string; source: VariableValueSource }> {
+  const merged = new Map<string, { value: string; source: VariableValueSource }>();
+
+  for (const [key, value] of Object.entries(flow.variables)) {
+    merged.set(key, { value, source: "flow-default" });
+  }
+
+  for (const value of globals?.values ?? []) {
+    if (!value.enabled) continue;
+    merged.set(keyValueKey(value.key), {
+      value: value.value,
+      source: value.source === "workspace-env" ? "workspace-env" : "globals-file",
+    });
+  }
+
+  for (const value of env?.values ?? []) {
+    if (!value.enabled) continue;
+    merged.set(keyValueKey(value.key), {
+      value: value.value,
+      source: "environment",
+    });
+  }
+
+  for (const [key, value] of Object.entries(formInput)) {
+    merged.set(key, { value, source: "form-input" });
+  }
+
+  for (const name of flow.requires) {
+    if (!merged.has(name)) {
+      merged.set(name, { value: "", source: "form-input" });
+    }
+  }
+
+  return merged;
+}
+
+function keyValueKey(key: string): string {
+  return key;
+}
+
+function resolveDisplayValue(
+  key: string,
+  merged: Map<string, { value: string; source: VariableValueSource }>,
+  visiting: Set<string>,
+): ResolvedVariableDisplay {
+  if (visiting.has(key)) {
+    const raw = merged.get(key)?.value ?? "";
+    return {
+      value: raw,
+      runtimeValue: raw,
+      submittedValue: raw,
+      fromWorkspaceEnv: false,
+    };
+  }
+
+  const entry = merged.get(key);
+  if (!entry) {
+    return {
+      value: "",
+      runtimeValue: "",
+      submittedValue: "",
+      fromWorkspaceEnv: false,
+    };
+  }
+
+  const directFromWorkspaceEnv =
+    entry.source === "workspace-env" && entry.value !== "";
+  const aliasMatch = EXACT_TOKEN_RE.exec(entry.value);
+  if (!aliasMatch) {
+    return directFromWorkspaceEnv
+      ? {
+          value: key,
+          runtimeValue: entry.value,
+          submittedValue: entry.value,
+          fromWorkspaceEnv: true,
+          workspaceEnvKey: key,
+        }
+      : {
+          value: entry.value,
+          runtimeValue: entry.value,
+          submittedValue: entry.value,
+          fromWorkspaceEnv: false,
+        };
+  }
+
+  visiting.add(key);
+  const aliasKey = aliasMatch[1]!;
+  const resolved = resolveDisplayValue(aliasKey, merged, visiting);
+  visiting.delete(key);
+
+  if (resolved.fromWorkspaceEnv) {
+    return {
+      value: resolved.workspaceEnvKey ?? aliasKey,
+      runtimeValue: resolved.runtimeValue,
+      submittedValue: `{{${resolved.workspaceEnvKey ?? aliasKey}}}`,
+      fromWorkspaceEnv: true,
+      workspaceEnvKey: resolved.workspaceEnvKey ?? aliasKey,
+    };
+  }
+
+  return {
+    value: resolved.value,
+    runtimeValue: resolved.runtimeValue,
+    submittedValue: resolved.submittedValue,
+    fromWorkspaceEnv: false,
+  };
+}
+
+export function resolveDisplayVariables(
+  flow: Flow,
+  env: Environment | null,
+  globals: Globals | null,
+  formInput: Record<string, string>,
+): Record<string, ResolvedVariableDisplay> {
+  const merged = buildSourceMap(flow, env, globals, formInput);
+  const result: Record<string, ResolvedVariableDisplay> = {};
+
+  for (const key of merged.keys()) {
+    result[key] = resolveDisplayValue(key, merged, new Set<string>());
   }
 
   return result;

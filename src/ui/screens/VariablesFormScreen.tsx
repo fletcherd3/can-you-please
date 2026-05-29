@@ -3,7 +3,7 @@ import { Box, Text, useInput } from "ink";
 import type { AnyFlow, Environment, Globals } from "../../domain.js";
 import {
   detectVariables,
-  resolveVariables,
+  resolveDisplayVariables,
   type VariableMeta,
 } from "../../variables/index.js";
 import { ORANGE } from "../components/FilterableList.js";
@@ -48,27 +48,34 @@ export function VariablesFormScreen({
   }, [flow]);
 
   // Initial values from the full five-layer merge (form-input layer is empty)
-  const initialValues = useMemo((): Record<string, string> => {
+  const displayVariables = useMemo(() => {
     if (flow.kind !== "flow") return {};
-    const resolved = resolveVariables(flow, env, globals ?? null, {});
-    return Object.fromEntries(
-      meta.map((m) => [m.name, resolved[m.name] ?? ""]),
-    );
-  }, [flow, env, globals, meta]);
+    return resolveDisplayVariables(flow, env, globals ?? null, {});
+  }, [flow, env, globals]);
 
-  const workspaceEnvValues = useMemo((): Record<string, string> => {
-    if (!globals) return {};
+  const initialValues = useMemo((): Record<string, string> => {
     return Object.fromEntries(
-      globals.values
-        .filter(
-          (value) =>
-            value.enabled &&
-            value.source === "workspace-env" &&
-            value.value !== "",
-        )
-        .map((value) => [value.key, value.value]),
+      meta.map((m) => [m.name, displayVariables[m.name]?.value ?? ""]),
     );
-  }, [globals]);
+  }, [displayVariables, meta]);
+
+  const workspaceEnvDisplayValues = useMemo((): Record<string, string> => {
+    return Object.fromEntries(
+      meta
+        .filter((m) => displayVariables[m.name]?.fromWorkspaceEnv)
+        .map((m) => [m.name, displayVariables[m.name]!.value])
+        .filter(([, value]) => value !== ""),
+    );
+  }, [displayVariables, meta]);
+
+  const submittedWorkspaceEnvValues = useMemo((): Record<string, string> => {
+    return Object.fromEntries(
+      meta
+        .filter((m) => displayVariables[m.name]?.fromWorkspaceEnv)
+        .map((m) => [m.name, displayVariables[m.name]!.submittedValue])
+        .filter(([, value]) => value !== ""),
+    );
+  }, [displayVariables, meta]);
 
   // -------------------------------------------------------------------------
   // Form state
@@ -102,7 +109,19 @@ export function VariablesFormScreen({
       if (idx !== -1) setFocusedIndex(idx);
       return;
     }
-    onSubmit(values, continueOnError);
+    const submittedValues = Object.fromEntries(
+      Object.entries(values).map(([name, value]) => {
+        const submittedWorkspaceEnvValue = submittedWorkspaceEnvValues[name];
+        if (
+          submittedWorkspaceEnvValue !== undefined &&
+          workspaceEnvDisplayValues[name] === value
+        ) {
+          return [name, submittedWorkspaceEnvValue];
+        }
+        return [name, value];
+      }),
+    );
+    onSubmit(submittedValues, continueOnError);
   }
 
   // -------------------------------------------------------------------------
@@ -154,9 +173,10 @@ export function VariablesFormScreen({
     const isActive = focusedIndex === globalIndex;
     const hasError = showErrors && m.required && !(values[m.name] ?? "");
     const ddOpen = dropdownOpenAt === globalIndex;
-    const workspaceEnvValue = workspaceEnvValues[m.name];
+    const workspaceEnvDisplayValue = workspaceEnvDisplayValues[m.name];
     const showWorkspaceEnvHint =
-      workspaceEnvValue !== undefined && values[m.name] === workspaceEnvValue;
+      workspaceEnvDisplayValue !== undefined &&
+      values[m.name] === workspaceEnvDisplayValue;
 
     return (
       <Box key={m.name} flexDirection="row">
@@ -168,7 +188,7 @@ export function VariablesFormScreen({
             {m.name}
           </Text>
         </Box>
-        <Box flexDirection="column">
+        <Box flexDirection="row">
           <EnumInput
             value={values[m.name] ?? ""}
             onChange={(v) => setValue(m.name, v)}
@@ -184,7 +204,7 @@ export function VariablesFormScreen({
             }}
           />
           {showWorkspaceEnvHint && (
-            <Box marginLeft={2}>
+            <Box marginLeft={1}>
               <Text dimColor>(from .env)</Text>
             </Box>
           )}

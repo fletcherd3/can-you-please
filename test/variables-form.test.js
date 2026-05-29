@@ -218,7 +218,7 @@ test("disabled env values are excluded from pre-fill", () => {
   unmount();
 });
 
-test("shows '(from .env)' when displayed value comes from workspace env", () => {
+test("shows workspace env key and '(from .env)' when displayed value comes from workspace env", () => {
   const flow = makeFlow({
     requests: makeRequest("https://api/?email={{email}}"),
   });
@@ -237,8 +237,44 @@ test("shows '(from .env)' when displayed value comes from workspace env", () => 
     React.createElement(VariablesFormScreen, makeProps({ flow, globals })),
   );
   const frame = lastFrame();
-  assert.ok(frame.includes("env-file@example.com"), `expected value in: ${frame}`);
+  assert.ok(frame.includes("email"), `expected display key in: ${frame}`);
+  assert.ok(!frame.includes("env-file@example.com"), `should not show secret value in: ${frame}`);
   assert.ok(frame.includes("(from .env)"), `expected hint in: ${frame}`);
+  unmount();
+});
+
+test("shows workspace env key for single-token env aliases and toggles '(from .env)' by display-name match", async () => {
+  const flow = makeFlow({
+    requests: makeRequest("https://api/?pw={{del_auth_pw}}"),
+  });
+  const globals = makeGlobals(
+    [
+      {
+        key: "DEV_DEL_AUTH_PW",
+        value: "super-secret",
+        enabled: true,
+        source: "workspace-env",
+      },
+    ],
+    "/tmp/ws/.env",
+  );
+  const env = makeEnv("dev", [
+    { key: "del_auth_pw", value: "{{DEV_DEL_AUTH_PW}}", enabled: true },
+  ]);
+  const { stdin, lastFrame, unmount } = render(
+    React.createElement(VariablesFormScreen, makeProps({ flow, globals, env })),
+  );
+  let frame = lastFrame();
+  assert.ok(frame.includes("DEV_DEL_AUTH_PW"), `expected env key in: ${frame}`);
+  assert.ok(!frame.includes("{{DEV_DEL_AUTH_PW}}"), `should not show braces in: ${frame}`);
+  assert.ok(!frame.includes("super-secret"), `should not show secret value in: ${frame}`);
+  assert.ok(frame.includes("(from .env)"), `expected hint in: ${frame}`);
+
+  stdin.write("_BLAH");
+  await wait();
+  frame = lastFrame();
+  assert.ok(frame.includes("DEV_DEL_AUTH_PW_BLAH"), `expected edited display name in: ${frame}`);
+  assert.ok(!frame.includes("(from .env)"), `hint should disappear after display-name edit: ${frame}`);
   unmount();
 });
 
@@ -270,7 +306,7 @@ test("editing away from workspace env value removes '(from .env)' immediately", 
   unmount();
 });
 
-test("editing back to workspace env value restores '(from .env)', but env overrides do not show it", async () => {
+test("editing back to workspace env display key restores '(from .env)', but env overrides do not show it", async () => {
   const flow = makeFlow({
     requests: makeRequest("https://api/?token={{token}}&base={{base}}"),
   });
@@ -314,7 +350,7 @@ test("editing back to workspace env value restores '(from .env)', but env overri
   stdin.write("\x7f");
   await wait();
   frame = lastFrame();
-  assert.ok(frame.includes("abc"), `expected restored value: ${frame}`);
+  assert.ok(frame.includes("token"), `expected restored display key: ${frame}`);
   assert.equal(
     frame.match(/\(from \.env\)/g)?.length ?? 0,
     1,
