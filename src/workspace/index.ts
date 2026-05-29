@@ -107,19 +107,28 @@ async function loadEnvironments(envDir: string): Promise<Environment[]> {
 function parseWorkspaceEnvFile(text: string): EnvValue[] {
   const values: EnvValue[] = [];
 
-  for (const rawLine of text.split(/\r?\n/)) {
+  for (const [index, rawLine] of text.split(/\r?\n/).entries()) {
+    const lineNumber = index + 1;
     const line = rawLine.trim();
     if (!line || line.startsWith("#")) continue;
 
-    const equalsIdx = line.indexOf("=");
-    if (equalsIdx < 0) continue;
+    const equalsIdx = rawLine.indexOf("=");
+    if (equalsIdx < 0) {
+      throw new Error(
+        `invalid .env line ${lineNumber}: expected KEY=VALUE, got ${JSON.stringify(rawLine)}`,
+      );
+    }
 
-    const key = line.slice(0, equalsIdx).trim();
-    if (!key) continue;
+    const key = rawLine.slice(0, equalsIdx).trim();
+    if (!key) {
+      throw new Error(
+        `invalid .env line ${lineNumber}: key is required before '='`,
+      );
+    }
 
     values.push({
       key,
-      value: line.slice(equalsIdx + 1),
+      value: rawLine.slice(equalsIdx + 1),
       enabled: true,
     });
   }
@@ -132,10 +141,15 @@ async function loadWorkspaceEnvGlobals(rootPath: string): Promise<Globals | null
   if (!(await fileExists(filePath))) return null;
 
   const text = await readText(filePath);
-  return {
-    values: parseWorkspaceEnvFile(text),
-    filePath,
-  };
+  try {
+    return {
+      values: parseWorkspaceEnvFile(text),
+      filePath,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "invalid .env file";
+    throw new Error(`failed to load ${filePath}: ${message}`);
+  }
 }
 
 async function loadGlobals(globalsDir: string): Promise<Globals | null> {

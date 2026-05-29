@@ -715,6 +715,41 @@ test("shift-R calls onReload with new workspace", async () => {
   unmount();
 });
 
+test("shift-R shows workspace reload errors", async () => {
+  const { loadWorkspace } = await import("../dist/workspace/index.js");
+  const { mkdtemp, cp, writeFile, rm } = await import("node:fs/promises");
+  const { join } = await import("node:path");
+  const { tmpdir } = await import("node:os");
+
+  const wsPath = new URL("fixtures/workspace/ungrouped", import.meta.url)
+    .pathname;
+  const ws = await loadWorkspace(wsPath);
+
+  const tmpRoot = await mkdtemp(join(tmpdir(), "cyp-flow-reload-"));
+  const brokenWsPath = join(tmpRoot, "workspace");
+  await cp(wsPath, brokenWsPath, { recursive: true });
+  await writeFile(join(brokenWsPath, ".env"), "GOOD=value\nBROKEN_LINE\n");
+
+  const { lastFrame, stdin, unmount } = render(
+    React.createElement(FlowPickerScreen, {
+      workspace: { ...ws, rootPath: brokenWsPath },
+      onSelect: () => {},
+      onReload: () => {},
+      onQuit: () => {},
+      onHelp: () => {},
+    }),
+  );
+  stdin.write("R");
+  await wait(200);
+  const frame = lastFrame();
+  assert.ok(
+    frame.includes("failed to load") && frame.includes("BROKEN_LINE"),
+    `expected reload error in: ${frame}`,
+  );
+  unmount();
+  await rm(tmpRoot, { recursive: true, force: true });
+});
+
 // ---------------------------------------------------------------------------
 // Navigation
 // ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Text, useInput, useApp } from "ink";
 import { basename } from "node:path";
 import type { AnyFlow, Environment, Flow, Workspace } from "../../domain.js";
@@ -203,6 +203,7 @@ export function FlowPickerScreen({
   const [groupFilter, setGroupFilter] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<"none" | "env" | "group">("none");
   const [brokenFlowError, setBrokenFlowError] = useState<string | null>(null);
+  const [reloadError, setReloadError] = useState<string | null>(null);
   const [isReloading, setIsReloading] = useState(false);
 
   // -----------------------------------------------------------------------
@@ -251,18 +252,25 @@ export function FlowPickerScreen({
 
   function handleReload() {
     if (isReloading) return;
+    setReloadError(null);
     setIsReloading(true);
     loadWorkspace(workspace.rootPath)
       .then((newWs) => {
         onReload(newWs);
       })
-      .catch(() => {
-        // ignore reload errors silently — workspace will stay unchanged
+      .catch((err) => {
+        setReloadError(
+          err instanceof Error ? err.message : "failed to reload workspace",
+        );
       })
       .finally(() => {
         setIsReloading(false);
       });
   }
+
+  useEffect(() => {
+    setReloadError(null);
+  }, [workspace]);
 
   // -----------------------------------------------------------------------
   // Keyboard — main handler (active when no overlay is open)
@@ -383,8 +391,9 @@ export function FlowPickerScreen({
         </Box>
       )}
 
-      {/* Broken flow error */}
+      {/* Errors */}
       {brokenFlowError != null && <Text color="red">{brokenFlowError}</Text>}
+      {reloadError != null && <Text color="red">{reloadError}</Text>}
 
       <Text> </Text>
 

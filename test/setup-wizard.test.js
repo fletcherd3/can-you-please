@@ -280,6 +280,54 @@ test("existing-path: invalid path shows inline error", async () => {
   unmount();
 });
 
+test("existing-path: malformed .env parse errors are shown inline", async () => {
+  const tmpDir = await makeTmpDir();
+  tmpDirs.push(tmpDir);
+
+  const wsRoot = path.join(tmpDir, "bad-env-workspace");
+  await fs.mkdir(path.join(wsRoot, "postman", "collections", "example-flow", ".resources"), {
+    recursive: true,
+  });
+  await fs.mkdir(path.join(wsRoot, "postman", "environments"), {
+    recursive: true,
+  });
+  await fs.writeFile(
+    path.join(wsRoot, "postman", "collections", "example-flow", ".resources", "definition.yaml"),
+    ['name: "example"', 'environments: ["dev"]'].join("\n"),
+  );
+  await fs.writeFile(
+    path.join(wsRoot, "postman", "collections", "example-flow", "01-example.request.yaml"),
+    ['url: "https://example.com"', 'method: "GET"'].join("\n"),
+  );
+  await fs.writeFile(
+    path.join(wsRoot, "postman", "environments", "dev.environment.yaml"),
+    ['name: "dev"', "values: []"].join("\n"),
+  );
+  await fs.writeFile(path.join(wsRoot, ".env"), "GOOD=value\nBROKEN_LINE\n");
+
+  let doneCalled = false;
+  const { lastFrame, stdin, unmount } = render(
+    React.createElement(SetupWizardScreen, {
+      onDone: () => {
+        doneCalled = true;
+      },
+    }),
+  );
+  stdin.write("\r");
+  await wait();
+  for (const ch of wsRoot) stdin.write(ch);
+  await wait();
+  stdin.write("\r");
+  await wait(250);
+  const frame = lastFrame();
+  assert.ok(
+    frame.includes("failed to load") && frame.includes("BROKEN_LINE"),
+    `expected parse error in: ${frame}`,
+  );
+  assert.ok(!doneCalled, "onDone should not have been called");
+  unmount();
+});
+
 // ---------------------------------------------------------------------------
 // Keyboard — scaffold-config
 // ---------------------------------------------------------------------------

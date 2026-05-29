@@ -184,8 +184,12 @@ export function SetupWizardScreen({
         }
         await writeConfig({ workspacePath: resolved });
         onDone(resolved);
-      } catch {
-        setPathError("no valid workspace found at that path");
+      } catch (err) {
+        setPathError(
+          err instanceof Error
+            ? err.message
+            : "no valid workspace found at that path",
+        );
         setIsSubmitting(false);
       }
     })();

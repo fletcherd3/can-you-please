@@ -6,6 +6,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
+import os from "node:os";
+import fs from "node:fs/promises";
 
 import { loadWorkspace, isValidWorkspace } from "../dist/workspace/index.js";
 
@@ -204,6 +206,93 @@ test("vars-and-enums: workspace .env populates globals when present", async () =
       ["product", "env-file-product"],
     ],
   );
+});
+
+test("workspace .env: blank values are accepted", async () => {
+  const tmpDir = await fs.mkdtemp(join(os.tmpdir(), "cyp-workspace-env-"));
+  try {
+    await fs.mkdir(join(tmpDir, "postman", "collections", "example-flow", ".resources"), {
+      recursive: true,
+    });
+    await fs.mkdir(join(tmpDir, "postman", "environments"), {
+      recursive: true,
+    });
+    await fs.writeFile(
+      join(tmpDir, "postman", "collections", "example-flow", ".resources", "definition.yaml"),
+      [
+        'name: "example"',
+        'environments: ["dev"]',
+      ].join("\n"),
+    );
+    await fs.writeFile(
+      join(tmpDir, "postman", "collections", "example-flow", "01-example.request.yaml"),
+      [
+        'url: "https://example.com"',
+        'method: "GET"',
+      ].join("\n"),
+    );
+    await fs.writeFile(
+      join(tmpDir, "postman", "environments", "dev.environment.yaml"),
+      [
+        'name: "dev"',
+        "values: []",
+      ].join("\n"),
+    );
+    await fs.writeFile(join(tmpDir, ".env"), "blank=\nfilled=value\n");
+
+    const ws = await loadWorkspace(tmpDir);
+    assert.ok(ws.globals);
+    assert.deepEqual(
+      ws.globals.values.map((value) => [value.key, value.value]),
+      [
+        ["blank", ""],
+        ["filled", "value"],
+      ],
+    );
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("workspace .env: malformed file fails workspace loading with parse error", async () => {
+  const tmpDir = await fs.mkdtemp(join(os.tmpdir(), "cyp-workspace-env-"));
+  try {
+    await fs.mkdir(join(tmpDir, "postman", "collections", "example-flow", ".resources"), {
+      recursive: true,
+    });
+    await fs.mkdir(join(tmpDir, "postman", "environments"), {
+      recursive: true,
+    });
+    await fs.writeFile(
+      join(tmpDir, "postman", "collections", "example-flow", ".resources", "definition.yaml"),
+      [
+        'name: "example"',
+        'environments: ["dev"]',
+      ].join("\n"),
+    );
+    await fs.writeFile(
+      join(tmpDir, "postman", "collections", "example-flow", "01-example.request.yaml"),
+      [
+        'url: "https://example.com"',
+        'method: "GET"',
+      ].join("\n"),
+    );
+    await fs.writeFile(
+      join(tmpDir, "postman", "environments", "dev.environment.yaml"),
+      [
+        'name: "dev"',
+        "values: []",
+      ].join("\n"),
+    );
+    await fs.writeFile(join(tmpDir, ".env"), "GOOD=value\nNOT_VALID\n");
+
+    await assert.rejects(
+      () => loadWorkspace(tmpDir),
+      /failed to load .*\.env: invalid \.env line 2: expected KEY=VALUE, got "NOT_VALID"/,
+    );
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
 });
 
 // ---------------------------------------------------------------------------
