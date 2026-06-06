@@ -10,6 +10,7 @@ import type {
   Flow,
   Globals,
   Request,
+  RequestAuth,
   RequestBody,
   Script,
   Workspace,
@@ -200,6 +201,31 @@ function mergeGlobals(
 // Request parsing
 // ---------------------------------------------------------------------------
 
+function parseAuth(raw: unknown): RequestAuth | undefined {
+  if (raw == null || typeof raw !== "object") return undefined;
+  const auth = raw as Record<string, unknown>;
+  const type = auth["type"];
+  const credentialsRaw = auth["credentials"];
+
+  if (type !== "basic" && type !== "bearer") {
+    return undefined;
+  }
+
+  const credentials: Record<string, string> = {};
+  if (credentialsRaw != null && typeof credentialsRaw === "object") {
+    for (const [key, value] of Object.entries(
+      credentialsRaw as Record<string, unknown>,
+    )) {
+      credentials[key] = String(value);
+    }
+  }
+
+  return {
+    type,
+    credentials,
+  };
+}
+
 function parseRequest(raw: unknown, filePath: string): Request {
   const r = raw as Record<string, unknown>;
 
@@ -249,6 +275,7 @@ function parseRequest(raw: unknown, filePath: string): Request {
     url: String(r?.["url"] ?? ""),
     method: String(r?.["method"] ?? "GET").toUpperCase(),
     headers,
+    auth: parseAuth(r?.["auth"]),
     body,
     scripts,
     order: typeof r?.["order"] === "number" ? (r["order"] as number) : 1000,

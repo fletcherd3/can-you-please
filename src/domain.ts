@@ -11,12 +11,18 @@ export interface RequestBody {
   content: string;
 }
 
+export interface RequestAuth {
+  type: "basic" | "bearer";
+  credentials: Record<string, string>;
+}
+
 export interface Request {
   /** Filename stem — e.g. "01-create-user" from "01-create-user.request.yaml" */
   name: string;
   url: string;
   method: string;
   headers: Record<string, string>;
+  auth?: RequestAuth;
   body?: RequestBody;
   scripts: Script[];
   order: number;

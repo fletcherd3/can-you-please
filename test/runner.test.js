@@ -7,7 +7,10 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 
-import { runFlow } from "../dist/runner/index.js";
+import {
+  runFlow,
+  resolveNewmanTlsOptions,
+} from "../dist/runner/index.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -221,6 +224,27 @@ test("abort mid-run: stops after first request, no unhandled rejections", async 
   // Only the first request should have completed
   assert.equal(completedNames.length, 1, "exactly one request should complete");
   assert.equal(completedNames[0], "r1");
+});
+
+test("resolveNewmanTlsOptions: converts NODE_TLS_REJECT_UNAUTHORIZED=0 into newman insecure", () => {
+  const env = { NODE_TLS_REJECT_UNAUTHORIZED: "0" };
+
+  const result = resolveNewmanTlsOptions(env);
+
+  assert.deepEqual(result, { insecure: true });
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(env, "NODE_TLS_REJECT_UNAUTHORIZED"),
+    false,
+  );
+});
+
+test("resolveNewmanTlsOptions: leaves env untouched when TLS override is absent", () => {
+  const env = { OTHER: "1" };
+
+  const result = resolveNewmanTlsOptions(env);
+
+  assert.deepEqual(result, {});
+  assert.deepEqual(env, { OTHER: "1" });
 });
 
 test("pm.variables.set() captured in variablesSet", async () => {
@@ -509,6 +533,56 @@ test("sent snapshot captures runtime-added system headers", async () => {
   assert.ok(
     completed.sentRequest?.headers?.["User-Agent"],
     "sent snapshot should include runtime-added system headers",
+  );
+});
+
+test("request auth: basic auth is delegated to newman and sent as authorization header", async () => {
+  let capturedAuthorization = "";
+  server.removeAllListeners("request");
+  server.on("request", (req, res) => {
+    capturedAuthorization = String(req.headers.authorization ?? "");
+    if (req.url === "/ok") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
+
+  const flow = makeFlow({
+    requests: [
+      makeRequest("basic-auth", `${baseUrl}/ok`, {
+        auth: {
+          type: "basic",
+          credentials: {
+            username: "{{del_auth_name}}",
+            password: "{{del_auth_pw}}",
+          },
+        },
+      }),
+    ],
+  });
+
+  const events = await collect(
+    runFlow(
+      flow,
+      { del_auth_name: "alice", del_auth_pw: "secret" },
+      { continueOnError: false },
+    ),
+  );
+  const completed = events.find((e) => e.type === "RequestCompleted");
+
+  assert.ok(completed, "should have RequestCompleted");
+  assert.equal(
+    capturedAuthorization,
+    `Basic ${Buffer.from("alice:secret").toString("base64")}`,
+    "newman should turn request auth into the outbound authorization header",
+  );
+  assert.equal(
+    completed.sentRequest?.headers?.Authorization,
+    capturedAuthorization,
+    "sent snapshot should include the generated Authorization header",
   );
 });
 

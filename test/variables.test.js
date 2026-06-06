@@ -133,6 +133,28 @@ test("detectVariables: scans tokens across url, headers, and body", () => {
   );
 });
 
+test("detectVariables: scans tokens from request auth credentials", () => {
+  const flow = makeFlow({
+    requests: [
+      makeRequest({
+        url: "https://example.com",
+        auth: {
+          type: "basic",
+          credentials: {
+            username: "{{del_auth_name}}",
+            password: "{{del_auth_pw}}",
+          },
+        },
+      }),
+    ],
+  });
+  const meta = detectVariables(flow);
+  assert.deepEqual(
+    meta.map((m) => m.name),
+    ["del_auth_name", "del_auth_pw"],
+  );
+});
+
 test("detectVariables: deduplicates tokens across multiple requests", () => {
   const flow = makeFlow({
     requests: [

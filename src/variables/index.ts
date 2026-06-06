@@ -52,11 +52,15 @@ function scanTokens(text: string): string[] {
 function tokensFromRequest(req: {
   url: string;
   headers: Record<string, string>;
+  auth?: { credentials: Record<string, string> } | undefined;
   body?: { content: string } | undefined;
 }): string[] {
   const names: string[] = [];
   names.push(...scanTokens(req.url));
   for (const val of Object.values(req.headers)) {
+    names.push(...scanTokens(val));
+  }
+  for (const val of Object.values(req.auth?.credentials ?? {})) {
     names.push(...scanTokens(val));
   }
   if (req.body) {
@@ -66,9 +70,9 @@ function tokensFromRequest(req: {
 }
 
 /**
- * Scan every {{name}} token across a flow's request URLs, header values, and
- * body content. Returns one VariableMeta per unique name (first-seen order),
- * annotated with metadata from definition.yaml.
+ * Scan every {{name}} token across a flow's request URLs, header values,
+ * auth credential values, and body content. Returns one VariableMeta per
+ * unique name (first-seen order), annotated with metadata from definition.yaml.
  */
 export function detectVariables(flow: Flow): VariableMeta[] {
   const seen = new Set<string>();

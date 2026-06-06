@@ -227,6 +227,11 @@ async function makeMinimalWorkspace(tmpDir) {
     [
       'url: "https://example.com?token={{token}}&shared={{shared}}&blank={{blank}}"',
       'method: "GET"',
+      'auth:',
+      '  type: basic',
+      '  credentials:',
+      '    username: "{{auth_user}}"',
+      '    password: "{{auth_pw}}"',
     ].join("\n"),
   );
   await fs.writeFile(
@@ -237,6 +242,26 @@ async function makeMinimalWorkspace(tmpDir) {
     ].join("\n"),
   );
 }
+
+test("workspace loader: parses request auth blocks", async () => {
+  const tmpDir = await fs.mkdtemp(join(os.tmpdir(), "cyp-workspace-auth-"));
+  try {
+    await makeMinimalWorkspace(tmpDir);
+
+    const ws = await loadWorkspace(tmpDir);
+    const flow = ws.flows.find((f) => f.kind === "flow");
+    assert.ok(flow);
+    assert.deepEqual(flow.requests[0].auth, {
+      type: "basic",
+      credentials: {
+        username: "{{auth_user}}",
+        password: "{{auth_pw}}",
+      },
+    });
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
 
 test("workspace .env: parses comments, blank values, and duplicate keys", async () => {
   const tmpDir = await fs.mkdtemp(join(os.tmpdir(), "cyp-workspace-env-"));

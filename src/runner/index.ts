@@ -80,6 +80,11 @@ export interface RunOptions {
   globals?: Record<string, string>;
 }
 
+export interface NewmanTlsOptions {
+  /** Mirrors Newman's `insecure` flag. */
+  insecure?: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Postman v2.1 collection builder
 // ---------------------------------------------------------------------------
@@ -103,6 +108,7 @@ function buildCollection(flow: Flow): Record<string, unknown> {
           key,
           value,
         })),
+        ...(req.auth != null ? { auth: buildRequestAuth(req.auth) } : {}),
         ...(req.body != null
           ? {
               body: {
@@ -152,6 +158,27 @@ function buildGlobals(
       value,
       enabled: true,
     })),
+  };
+}
+
+function buildRequestAuth(auth: Flow["requests"][number]["auth"]): Record<string, unknown> {
+  if (auth == null) {
+    return {};
+  }
+
+  if (auth.type === "basic") {
+    return {
+      type: "basic",
+      basic: [
+        { key: "username", value: auth.credentials.username ?? "" },
+        { key: "password", value: auth.credentials.password ?? "" },
+      ],
+    };
+  }
+
+  return {
+    type: "bearer",
+    bearer: [{ key: "token", value: auth.credentials.token ?? "" }],
   };
 }
 
@@ -272,6 +299,23 @@ function parsedErrorFromBody(body: string): ParsedResponseError | undefined {
   return undefined;
 }
 
+/**
+ * Preserve the legacy effect of NODE_TLS_REJECT_UNAUTHORIZED=0, but map it to
+ * Newman's explicit `insecure` option instead of relying on Node's global TLS
+ * escape hatch (which emits a warning and weakens every HTTPS request in the
+ * process).
+ */
+export function resolveNewmanTlsOptions(
+  env: NodeJS.ProcessEnv = process.env,
+): NewmanTlsOptions {
+  if (env.NODE_TLS_REJECT_UNAUTHORIZED === "0") {
+    delete env.NODE_TLS_REJECT_UNAUTHORIZED;
+    return { insecure: true };
+  }
+
+  return {};
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -361,10 +405,13 @@ export function runFlow(
             ? buildGlobals(options.globals)
             : undefined;
 
+        const tlsOptions = resolveNewmanTlsOptions();
+
         const emitter = newmanRun({
           collection,
           environment,
           ...(globals != null ? { globals } : {}),
+          ...tlsOptions,
           // bail = stop on failure; continueOnError is the inverse
           bail: !options.continueOnError,
           reporters: [],
